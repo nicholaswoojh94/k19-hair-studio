@@ -257,15 +257,26 @@
   <div class="max-w-6xl mx-auto px-6 py-2 flex items-center justify-between">
     <!-- Logo -->
     <a href="#" class="flex-shrink-0" aria-label="K19 Hair Studio Home">
-      <img src="brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio" class="w-auto" style="height: 160px;" />
+      <img src="brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio" class="w-auto" style="height: 48px;" />
     </a>
 
     <!-- Desktop Nav -->
     <div class="desktop-nav flex items-center gap-8">
-      <a href="#services" class="nav-link">Services</a>
-      <a href="#gallery" class="nav-link">Gallery</a>
-      <a href="#about" class="nav-link">About</a>
-      <a href="#booking" class="btn-gold ml-4">Book Now</a>
+      <a href="#services" class="nav-link" data-i18n="navServices">Services</a>
+      <a href="#gallery" class="nav-link" data-i18n="navGallery">Gallery</a>
+      <a href="#about" class="nav-link" data-i18n="navAbout">About</a>
+      <div class="relative" id="langSwitcher">
+        <button onclick="toggleLang()" class="nav-link flex items-center gap-1" style="background:none; border:none; cursor:pointer; padding:0;">
+          <span id="langLabel">EN</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <div id="langMenu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#1C1C1C; border:1px solid rgba(201,169,110,0.2); border-radius:4px; min-width:120px; padding:6px 0; z-index:200;">
+          <button onclick="setLang('en')" class="lang-option" style="display:block; width:100%; text-align:left; padding:8px 16px; font-family:'Poppins',sans-serif; font-size:0.78rem; color:rgba(250,250,248,0.7); background:none; border:none; cursor:pointer; letter-spacing:0.04em;">English</button>
+          <button onclick="setLang('bm')" class="lang-option" style="display:block; width:100%; text-align:left; padding:8px 16px; font-family:'Poppins',sans-serif; font-size:0.78rem; color:rgba(250,250,248,0.7); background:none; border:none; cursor:pointer; letter-spacing:0.04em;">Bahasa Malaysia</button>
+          <button onclick="setLang('zh')" class="lang-option" style="display:block; width:100%; text-align:left; padding:8px 16px; font-family:'Poppins',sans-serif; font-size:0.78rem; color:rgba(250,250,248,0.7); background:none; border:none; cursor:pointer; letter-spacing:0.04em;">中文</button>
+        </div>
+      </div>
+      <a href="/booking" class="btn-gold ml-4" data-i18n="navBook">Book Now</a>
     </div>
 
     <!-- Mobile toggle -->
@@ -281,7 +292,7 @@
     <a href="#services" class="nav-link py-2">Services</a>
     <a href="#gallery" class="nav-link py-2">Gallery</a>
     <a href="#about" class="nav-link py-2">About</a>
-    <a href="#booking" class="btn-gold mt-2 text-center">Book Now</a>
+    <a href="/booking" class="btn-gold mt-2 text-center" data-i18n="navBook">Book Now</a>
   </div>
 </nav>
 
@@ -298,55 +309,21 @@
     <div style="height:1px; background: linear-gradient(to right, transparent, rgba(201,169,110,0.12), transparent); margin: 0 auto; max-width: 800px;"></div>
   </div>
 
-  <!-- Split photo pair — replaces logo as hero centrepiece -->
-  <div class="absolute inset-0 flex" style="z-index: 2; pointer-events: none;">
-
-    <!-- Left — Man -->
-    <div class="relative flex-1 overflow-hidden">
-      <img
-        src="brand_assets/hero_man.png"
-        alt="K19 Hair Studio — men's styling"
-        class="w-full h-full object-cover object-top"
-        style="filter: grayscale(100%) contrast(1.05);"
-      />
-      <!-- Vignette: all edges + strong inner-right fade to blend seam -->
-      <div class="absolute inset-0" style="
-        background:
-          linear-gradient(to right,  rgba(0,0,0,0.82) 0%, transparent 40%),
-          linear-gradient(to left,   rgba(0,0,0,0.80) 0%, transparent 38%),
-          linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%),
-          linear-gradient(to top,    rgba(0,0,0,0.75) 0%, transparent 38%);
-      "></div>
-    </div>
-
-    <!-- Vertical centre blend -->
-    <div class="relative flex-shrink-0" style="width: 0; z-index: 4;"></div>
-
-    <!-- Right — Woman -->
-    <div class="relative flex-1 overflow-hidden">
-      <img
-        src="brand_assets/hero_woman.png"
-        alt="K19 Hair Studio — women's styling"
-        class="w-full h-full object-cover object-top"
-        style="filter: grayscale(100%) contrast(1.05);"
-      />
-      <!-- Vignette: all edges + strong inner-left fade to blend seam -->
-      <div class="absolute inset-0" style="
-        background:
-          linear-gradient(to left,   rgba(0,0,0,0.82) 0%, transparent 40%),
-          linear-gradient(to right,  rgba(0,0,0,0.80) 0%, transparent 38%),
-          linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%),
-          linear-gradient(to top,    rgba(0,0,0,0.75) 0%, transparent 38%);
-      "></div>
-    </div>
-
-  </div>
+  <div class="absolute inset-0" style="z-index: 2; pointer-events: none;">
+  <img
+    src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600&q=80&auto=format&fit=crop"
+    alt="K19 Hair Studio"
+    class="w-full h-full object-cover object-center"
+    style="filter: grayscale(100%) contrast(1.05);"
+  />
+  <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.75) 100%);"></div>
+</div>
 
   <!-- Hero content — overlaid above photos -->
   <div class="relative flex flex-col items-center gap-5 max-w-2xl mx-auto" style="z-index: 5; padding-top: 80px;">
 
     <!-- Tagline — large, bold, editorial -->
-    <h1 class="font-serif fade-up" style="
+    <h1 class="font-serif fade-up" data-i18n="heroTagline" style="
       font-size: clamp(2.2rem, 6vw, 4.5rem);
       font-weight: 500;
       font-style: italic;
@@ -369,13 +346,13 @@
 
     <!-- CTAs -->
     <div class="fade-up flex flex-wrap gap-4 justify-center" style="transition-delay: 0.28s;">
-      <a href="#booking" class="btn-gold">Book Appointment</a>
-      <a href="#services" class="btn-outline">View Services</a>
+      <a href="/booking" class="btn-gold" data-i18n="heroCta1">Book Appointment</a>
+      <a href="#services" class="btn-outline" data-i18n="heroCta2">View Services</a>
     </div>
 
     <!-- Scroll hint -->
     <div class="fade-up flex flex-col items-center gap-2 mt-6" style="transition-delay: 0.44s; opacity: 0.5;">
-      <span class="font-sans text-xs tracking-widest uppercase text-off-white/60">Discover Your Look</span>
+      <span class="font-sans text-xs tracking-widest uppercase text-off-white/60" data-i18n="heroDiscover">Discover Your Look</span>
       <div style="width:1px; height:36px; background: linear-gradient(to bottom, rgba(201,169,110,0.7), transparent);"></div>
     </div>
   </div>
@@ -389,8 +366,8 @@
   <div class="max-w-6xl mx-auto">
     <!-- Section header -->
     <div class="text-center mb-16 fade-up">
-      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3">What we offer</p>
-      <h2 class="font-serif text-ink mb-4" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
+      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3" data-i18n="servicesLabel">What we offer</p>
+      <h2 class="font-serif text-ink mb-4" data-i18n="servicesTitle" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
         Our Services
       </h2>
       <span class="gold-rule"></span>
@@ -409,9 +386,9 @@
             <line x1="13.5" y1="23.5" x2="27" y2="11" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3 class="font-serif text-ink mb-1" style="font-size: 1.25rem; letter-spacing: -0.02em;">Cuts &amp; Styling</h3>
+        <h3 class="font-serif text-ink mb-1" data-i18n="s1Title" style="font-size: 1.25rem; letter-spacing: -0.02em;">Cuts &amp; Styling</h3>
         <span style="display:block; width:32px; height:1.5px; background:#C9A96E; margin-bottom:0.85rem; border-radius:2px;"></span>
-        <p class="font-sans text-ink/60" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
+        <p class="font-sans text-ink/60" data-i18n="s1Desc" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
           Precision cuts tailored to your face shape, lifestyle, and personal aesthetic. From classic to contemporary.
         </p>
       </div>
@@ -425,9 +402,9 @@
             <circle cx="18" cy="14" r="1.5" fill="#C9A96E" opacity="0.6"/>
           </svg>
         </div>
-        <h3 class="font-serif text-ink mb-1" style="font-size: 1.25rem; letter-spacing: -0.02em;">Colour &amp; Highlights</h3>
+        <h3 class="font-serif text-ink mb-1" data-i18n="s2Title" style="font-size: 1.25rem; letter-spacing: -0.02em;">Colour &amp; Highlights</h3>
         <span style="display:block; width:32px; height:1.5px; background:#C9A96E; margin-bottom:0.85rem; border-radius:2px;"></span>
-        <p class="font-sans text-ink/60" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
+        <p class="font-sans text-ink/60" data-i18n="s2Desc" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
           Balayage, foils, toning and full-colour transformations. Vibrant, healthy colour that lasts.
         </p>
       </div>
@@ -443,9 +420,9 @@
             <line x1="13" y1="7.5" x2="11" y2="4" stroke="#C9A96E" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
           </svg>
         </div>
-        <h3 class="font-serif text-ink mb-1" style="font-size: 1.25rem; letter-spacing: -0.02em;">Treatments &amp; Care</h3>
+        <h3 class="font-serif text-ink mb-1" data-i18n="s3Title" style="font-size: 1.25rem; letter-spacing: -0.02em;">Treatments &amp; Care</h3>
         <span style="display:block; width:32px; height:1.5px; background:#C9A96E; margin-bottom:0.85rem; border-radius:2px;"></span>
-        <p class="font-sans text-ink/60" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
+        <p class="font-sans text-ink/60" data-i18n="s3Desc" style="font-size: 0.875rem; line-height: 1.7; font-weight: 300;">
           Deep conditioning, keratin, scalp treatments. Restore health and lustre with premium professional products.
         </p>
       </div>
@@ -465,8 +442,8 @@
   <div class="max-w-6xl mx-auto relative z-10">
     <!-- Header -->
     <div class="text-center mb-16 fade-up">
-      <p class="font-sans text-xs tracking-widest uppercase text-off-white/30 mb-3">Why choose us</p>
-      <h2 class="font-serif text-off-white mb-4" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
+      <p class="font-sans text-xs tracking-widest uppercase text-off-white/30 mb-3" data-i18n="whyLabel">Why choose us</p>
+      <h2 class="font-serif text-off-white mb-4" data-i18n="whyTitle" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
         The Studio Standard
       </h2>
       <span class="gold-rule"></span>
@@ -478,25 +455,25 @@
       <div class="text-center fade-up" style="transition-delay: 0.06s;">
         <div class="stat-number">10+</div>
         <div style="width: 24px; height:1px; background:#C9A96E; margin: 0.6rem auto 0.75rem; opacity:0.5;"></div>
-        <p class="font-sans text-off-white/50 text-sm" style="font-weight:300; line-height:1.5;">Years<br/>Experience</p>
+        <p class="font-sans text-off-white/50 text-sm" data-i18n="stat1" style="font-weight:300; line-height:1.5;">Years<br/>Experience</p>
       </div>
 
       <div class="text-center fade-up" style="transition-delay: 0.14s;">
         <div class="stat-number">500+</div>
         <div style="width: 24px; height:1px; background:#C9A96E; margin: 0.6rem auto 0.75rem; opacity:0.5;"></div>
-        <p class="font-sans text-off-white/50 text-sm" style="font-weight:300; line-height:1.5;">Happy<br/>Clients</p>
+        <p class="font-sans text-off-white/50 text-sm" data-i18n="stat2" style="font-weight:300; line-height:1.5;">Happy<br/>Clients</p>
       </div>
 
       <div class="text-center fade-up" style="transition-delay: 0.22s;">
         <div class="font-serif" style="font-size: 3rem; font-weight:400; color:#C9A96E; letter-spacing:-0.03em; line-height:1;">★★</div>
         <div style="width: 24px; height:1px; background:#C9A96E; margin: 0.6rem auto 0.75rem; opacity:0.5;"></div>
-        <p class="font-sans text-off-white/50 text-sm" style="font-weight:300; line-height:1.5;">Premium<br/>Products</p>
+        <p class="font-sans text-off-white/50 text-sm" data-i18n="stat3" style="font-weight:300; line-height:1.5;">Premium<br/>Products</p>
       </div>
 
       <div class="text-center fade-up" style="transition-delay: 0.30s;">
         <div class="stat-number">100%</div>
         <div style="width: 24px; height:1px; background:#C9A96E; margin: 0.6rem auto 0.75rem; opacity:0.5;"></div>
-        <p class="font-sans text-off-white/50 text-sm" style="font-weight:300; line-height:1.5;">Expert<br/>Stylists</p>
+        <p class="font-sans text-off-white/50 text-sm" data-i18n="stat4" style="font-weight:300; line-height:1.5;">Expert<br/>Stylists</p>
       </div>
 
     </div>
@@ -504,7 +481,7 @@
     <!-- Decorative quote -->
     <div class="mt-20 text-center fade-up" style="transition-delay: 0.1s;">
       <p class="font-serif italic text-off-white/25" style="font-size: clamp(1.1rem, 2.5vw, 1.5rem); max-width: 560px; margin: 0 auto; line-height: 1.65;">
-        "Every cut is a canvas. Every colour, a story."
+        <span data-i18n="quote">"Every cut is a canvas. Every colour, a story."</span>
       </p>
     </div>
   </div>
@@ -518,8 +495,8 @@
   <div class="max-w-6xl mx-auto">
     <!-- Header -->
     <div class="text-center mb-16 fade-up">
-      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3">Our work</p>
-      <h2 class="font-serif text-ink mb-4" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
+      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3" data-i18n="galleryLabel">Our work</p>
+      <h2 class="font-serif text-ink mb-4" data-i18n="galleryTitle" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
         Gallery
       </h2>
       <span class="gold-rule"></span>
@@ -588,8 +565,8 @@
   <div class="max-w-6xl mx-auto">
     <!-- Header -->
     <div class="text-center mb-16 fade-up">
-      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3">Client stories</p>
-      <h2 class="font-serif text-ink mb-4" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
+      <p class="font-sans text-xs tracking-widest uppercase text-ink/40 mb-3" data-i18n="testiLabel">Client stories</p>
+      <h2 class="font-serif text-ink mb-4" data-i18n="testiTitle" style="font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.03em; font-weight: 400;">
         What They Say
       </h2>
       <span class="gold-rule"></span>
@@ -679,14 +656,14 @@
   <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:1px; background: linear-gradient(to right, transparent, rgba(201,169,110,0.5), transparent);"></div>
 
   <div class="max-w-2xl mx-auto text-center relative z-10 fade-up">
-    <p class="font-sans text-xs tracking-widest uppercase text-gold/60 mb-4">Ready to transform?</p>
+    <p class="font-sans text-xs tracking-widest uppercase text-gold/60 mb-4" data-i18n="bookLabel">Ready to transform?</p>
     <h2 class="font-serif text-off-white mb-5" style="font-size: clamp(2rem, 5vw, 3.25rem); letter-spacing: -0.03em; font-weight: 400; line-height: 1.15;">
-      Book Your<br/><em>Appointment</em>
+      <span data-i18n="bookTitle">Book Your</span><br/><em data-i18n="bookTitleEm">Appointment</em>
     </h2>
-    <p class="font-sans text-off-white/40 mb-10" style="font-size: 0.9rem; line-height: 1.7; max-width: 420px; margin-left:auto; margin-right:auto;">
+    <p class="font-sans text-off-white/40 mb-10" data-i18n="bookDesc" style="font-size: 0.9rem; line-height: 1.7; max-width: 420px; margin-left:auto; margin-right:auto;">
       Your next favourite look is one appointment away. Let our stylists bring your vision to life.
     </p>
-    <a href="mailto:nicholaswoojh@gmail.com" class="btn-gold" style="padding-left: 2.5rem; padding-right: 2.5rem; font-size: 0.8rem;">
+    <a href="/booking" class="btn-gold" data-i18n="bookCta" style="padding-left: 2.5rem; padding-right: 2.5rem; font-size: 0.8rem;">
       Book Your Appointment
     </a>
   </div>
@@ -703,24 +680,14 @@
       <!-- Brand -->
       <div class="flex flex-col gap-4 max-w-xs">
         <img src="brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio" style="width: 260px; height: auto; filter: opacity(0.75);"/>
-        <p class="font-sans text-off-white/35 text-sm" style="line-height: 1.7; font-weight:300;">
+        <p class="font-sans text-off-white/35 text-sm" data-i18n="footerDesc" style="line-height: 1.7; font-weight:300;">
           Premium hair studio dedicated to craftsmanship, creativity, and confidence.
         </p>
         <!-- Social icons -->
         <div class="flex gap-3 mt-1">
-          <a href="#" class="social-icon" aria-label="Instagram">
+          <a href="https://www.instagram.com/k19_hairstudio/" target="_blank" rel="noopener" class="social-icon" aria-label="Instagram">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-            </svg>
-          </a>
-          <a href="#" class="social-icon" aria-label="Facebook">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-            </svg>
-          </a>
-          <a href="#" class="social-icon" aria-label="TikTok">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
             </svg>
           </a>
         </div>
@@ -737,23 +704,36 @@
 
       <!-- Contact -->
       <div class="flex flex-col gap-3">
-        <p class="font-sans text-off-white/40 text-xs tracking-widest uppercase mb-1">Find Us</p>
-        <p class="font-sans text-off-white/35 text-sm" style="font-weight:300; line-height:1.6;">
-          123 Studio Lane<br/>
-          Your City, ST 0000
+        <p class="font-sans text-off-white/40 text-xs tracking-widest uppercase mb-2" data-i18n="footerFind">Find Us</p>
+        <p class="font-sans text-off-white/35 text-sm" style="font-weight:300; line-height:1.8;">
+          K19 Hair Studio<br/>
+          P2-1-09, The Zizz, 2,<br/>
+          Jalan PJU 10/1a, Damansara Damai,<br/>
+          47830 Petaling Jaya, Selangor
         </p>
-        <p class="font-sans text-off-white/35 text-sm" style="font-weight:300;">
-          Mon–Sat: 9am – 7pm<br/>
-          Sun: 10am – 5pm
+        <p class="font-sans text-off-white/35 text-sm mt-3" style="font-weight:300; line-height:1.8;">
+          Thu–Mon, Wed: 11am – 8pm<br/>
+          Sat–Sun: 10:30am – 8pm / 7pm<br/>
+          <span style="color:rgba(201,169,110,0.5);">Tuesday: Closed</span>
         </p>
-        <a href="tel:+10000000000" class="font-sans text-gold/70 text-sm hover:text-gold" style="transition: color 0.2s ease;">(000) 000-0000</a>
+        <div class="flex gap-3 mt-4">
+          <a href="https://share.google/Rq4Cle3KQWbN1ezVn" target="_blank" rel="noopener"
+             class="btn-outline" style="font-size:0.7rem; padding:0.5rem 1rem; height:auto;">
+            Google Maps
+          </a>
+          <a href="https://ul.waze.com/ul?place=ChIJwdJmyIpFzDERDwVvJS0CVXQ&ll=3.19819460%2C101.59607180&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" target="_blank" rel="noopener"
+             class="btn-outline" style="font-size:0.7rem; padding:0.5rem 1rem; height:auto;">
+            Waze
+          </a>
+        </div>
+        <a href="tel:+601127785730" class="font-sans text-gold/70 text-sm hover:text-gold mt-3 inline-block" style="transition: color 0.2s ease;">+60 11-2778 5730</a>
       </div>
     </div>
 
     <!-- Bottom row -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-3 pt-6">
-      <p class="font-sans text-off-white/20 text-xs">© 2026 K19 Hair Studio. All rights reserved.</p>
-      <p class="font-sans text-off-white/15 text-xs">Crafted with care.</p>
+      <p class="font-sans text-off-white/20 text-xs" data-i18n="footerCopy">© 2026 K19 Hair Studio. All rights reserved.</p>
+      <p class="font-sans text-off-white/15 text-xs" data-i18n="footerCraft">Crafted with care.</p>
     </div>
   </div>
 </footer>
@@ -804,6 +784,135 @@
     item.addEventListener('mouseleave', () => { caption.style.opacity = '0'; });
   });
 
+</script>
+
+<!-- ═══ WhatsApp floating button ═══ -->
+<a href="https://wa.me/601127785730" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
+   style="
+     position: fixed;
+     bottom: 24px;
+     right: 24px;
+     z-index: 999;
+     width: 54px;
+     height: 54px;
+     border-radius: 50%;
+     background: #25D366;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     box-shadow: 0 4px 20px rgba(37,211,102,0.35), 0 2px 8px rgba(0,0,0,0.2);
+     transition: transform 0.2s ease, box-shadow 0.2s ease;
+     text-decoration: none;
+   "
+   onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 6px 28px rgba(37,211,102,0.45), 0 2px 12px rgba(0,0,0,0.25)';"
+   onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(37,211,102,0.35), 0 2px 8px rgba(0,0,0,0.2)';"
+>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<!-- ═══ Translation script ═══ -->
+<script>
+const translations = {
+  en: {
+    navServices: "Services", navGallery: "Gallery", navAbout: "About", navBook: "Book Now",
+    heroTagline: "Where style meets artistry.",
+    heroDiscover: "Discover Your Look",
+    heroCta1: "Book Appointment", heroCta2: "View Services",
+    servicesLabel: "What we offer", servicesTitle: "Our Services",
+    s1Title: "Cuts & Styling", s1Desc: "Precision cuts tailored to your face shape, lifestyle, and personal aesthetic. From classic to contemporary.",
+    s2Title: "Colour & Highlights", s2Desc: "Balayage, foils, toning and full-colour transformations. Vibrant, healthy colour that lasts.",
+    s3Title: "Treatments & Care", s3Desc: "Deep conditioning, keratin, scalp treatments. Restore health and lustre with premium professional products.",
+    whyLabel: "Why choose us", whyTitle: "The Studio Standard",
+    stat1: "Years Experience", stat2: "Happy Clients", stat3: "Premium Products", stat4: "Expert Stylists",
+    quote: "\"Every cut is a canvas. Every colour, a story.\"",
+    galleryLabel: "Our work", galleryTitle: "Gallery",
+    testiLabel: "Client stories", testiTitle: "What They Say",
+    bookLabel: "Ready to transform?", bookTitle: "Book Your", bookTitleEm: "Appointment",
+    bookDesc: "Your next favourite look is one appointment away. Let our stylists bring your vision to life.",
+    bookCta: "Book Your Appointment",
+    footerDesc: "Premium hair studio dedicated to craftsmanship, creativity, and confidence.",
+    footerFind: "Find Us",
+    hours: "Thu–Mon, Wed: 11am–8pm\nSat–Sun: 10:30am–8pm / 7pm\nTuesday: Closed",
+    footerCopy: "© 2026 K19 Hair Studio. All rights reserved.",
+    footerCraft: "Crafted with care."
+  },
+  bm: {
+    navServices: "Perkhidmatan", navGallery: "Galeri", navAbout: "Tentang Kami", navBook: "Tempah Sekarang",
+    heroTagline: "Di mana gaya bertemu seni.",
+    heroDiscover: "Temui Gaya Anda",
+    heroCta1: "Buat Temujanji", heroCta2: "Lihat Perkhidmatan",
+    servicesLabel: "Yang kami tawarkan", servicesTitle: "Perkhidmatan Kami",
+    s1Title: "Gunting & Styling", s1Desc: "Gunting tepat mengikut bentuk muka, gaya hidup, dan citarasa anda. Dari klasik hingga kontemporari.",
+    s2Title: "Warna & Highlights", s2Desc: "Balayage, foil, toning dan transformasi warna penuh. Warna yang hidup, sihat, dan tahan lama.",
+    s3Title: "Rawatan & Penjagaan", s3Desc: "Rawatan kondisioner mendalam, keratin, dan kulit kepala. Pulihkan kesihatan rambut dengan produk profesional premium.",
+    whyLabel: "Mengapa pilih kami", whyTitle: "Standard Studio Kami",
+    stat1: "Tahun Pengalaman", stat2: "Pelanggan Berpuas Hati", stat3: "Produk Premium", stat4: "Pakar Stylist",
+    quote: "\"Setiap gunting itu kanvas. Setiap warna, sebuah cerita.\"",
+    galleryLabel: "Hasil kerja kami", galleryTitle: "Galeri",
+    testiLabel: "Cerita pelanggan", testiTitle: "Kata Mereka",
+    bookLabel: "Bersedia untuk berubah?", bookTitle: "Buat", bookTitleEm: "Temujanji Anda",
+    bookDesc: "Gaya kegemaran anda seterusnya hanya satu temujanji sahaja. Biarkan stylist kami merealisasikan impian anda.",
+    bookCta: "Tempah Temujanji",
+    footerDesc: "Studio rambut premium yang berdedikasi pada kraf, kreativiti, dan keyakinan diri.",
+    footerFind: "Lokasi Kami",
+    hours: "Kha–Isn, Rab: 11pg–8mlm\nSab–Ahd: 10:30pg–8mlm / 7mlm\nSelasa: Tutup",
+    footerCopy: "© 2026 K19 Hair Studio. Hak cipta terpelihara.",
+    footerCraft: "Dibina dengan sepenuh hati."
+  },
+  zh: {
+    navServices: "服务项目", navGallery: "作品展示", navAbout: "关于我们", navBook: "立即预约",
+    heroTagline: "型格与艺术，在此相遇。",
+    heroDiscover: "探索您的专属风格",
+    heroCta1: "立即预约", heroCta2: "查看服务",
+    servicesLabel: "我们的专业服务", servicesTitle: "服务项目",
+    s1Title: "剪发与造型", s1Desc: "根据您的脸型、生活方式及个人风格，精准打造专属发型。从经典到时尚，一切由您决定。",
+    s2Title: "染发与挑染", s2Desc: "渐染、锡纸染、调色及全色彩焕变。色彩鲜明持久，发质健康有光泽。",
+    s3Title: "护发与头皮护理", s3Desc: "深层护理、角蛋白疗程及头皮修护。采用专业级优质产品，还原秀发健康与光彩。",
+    whyLabel: "为什么选择我们", whyTitle: "K19 的品质承诺",
+    stat1: "年专业经验", stat2: "满意顾客", stat3: "顶级护发产品", stat4: "专业造型师",
+    quote: "「每一剪，皆是画布；每一色，皆是故事。」",
+    galleryLabel: "我们的作品", galleryTitle: "作品展示",
+    testiLabel: "顾客心声", testiTitle: "他们这样说",
+    bookLabel: "准备好焕然一新了吗？", bookTitle: "预约您的", bookTitleEm: "专属造型",
+    bookDesc: "距离您最爱的发型，只差一次预约。让我们的造型师为您实现心中的理想形象。",
+    bookCta: "立即预约",
+    footerDesc: "专业高端发型工作室，专注工艺、创意与自信之美。",
+    footerFind: "门店位置",
+    hours: "周四至周一、周三：上午11时至晚上8时\n周六至周日：上午10时30分至晚上8时/7时\n周二：休息",
+    footerCopy: "© 2026 K19 Hair Studio 版权所有。",
+    footerCraft: "用心打造。"
+  }
+};
+
+let currentLang = 'en';
+
+function toggleLang() {
+  const menu = document.getElementById('langMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = translations[lang];
+  document.getElementById('langLabel').textContent = lang === 'en' ? 'EN' : lang === 'bm' ? 'BM' : '中文';
+  document.getElementById('langMenu').style.display = 'none';
+
+  // Apply to all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+}
+
+// Close lang menu on outside click
+document.addEventListener('click', (e) => {
+  const switcher = document.getElementById('langSwitcher');
+  if (switcher && !switcher.contains(e.target)) {
+    document.getElementById('langMenu').style.display = 'none';
+  }
+});
 </script>
 
 </body>

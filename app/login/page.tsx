@@ -20,6 +20,7 @@ function LoginContent() {
   const [attempts, setAttempts] = useState(0)
   const [error, setError] = useState('')
   const [resendTimer, setResendTimer] = useState(0)
+  const [countryCode, setCountryCode] = useState('+60')
   const [langOpen, setLangOpen] = useState(false)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -66,7 +67,7 @@ function LoginContent() {
     const code = otp.join('')
     if (code === DUMMY_OTP) {
       try {
-        localStorage.setItem('k19_user', JSON.stringify({ phone, name: '', email: '', birthday: '' }))
+        localStorage.setItem('k19_user', JSON.stringify({ phone: `${countryCode}${phone}`, name: '', email: '', birthday: '' }))
         localStorage.setItem('k19-user-name', '')
       } catch { /* ignore */ }
       router.push(redirectTo)
@@ -84,6 +85,7 @@ function LoginContent() {
     }
   }
 
+  const otpComplete = otp.every(d => d !== '')
   const langLabel = lang === 'en' ? 'EN' : lang === 'bm' ? 'BM' : '中文'
 
   return (
@@ -126,7 +128,7 @@ function LoginContent() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link href="/">
             <Image src="/brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio"
-              width={200} height={56} style={{ height: 56, width: 'auto', margin: '0 auto' }}/>
+              width={300} height={120} style={{ height: 120, width: 'auto', margin: '0 auto' }}/>
           </Link>
         </div>
 
@@ -142,8 +144,28 @@ function LoginContent() {
             {t('loginSub')}
           </p>
 
+          <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>
+            Phone Number<span style={{ color: '#C9A96E', marginLeft: 3 }}>*</span>
+          </label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(201,169,110,0.2)', borderRadius: 4, padding: '0.75rem 0.875rem', fontSize: '0.9rem', color: 'rgba(250,250,248,0.5)', whiteSpace: 'nowrap' }}>+60</div>
+            <select value={countryCode} onChange={e => setCountryCode(e.target.value)}
+              style={{ background: '#1C1C1C', border: '1px solid rgba(201,169,110,0.4)', borderRadius: 4, padding: '0.75rem 0.5rem', fontSize: '0.85rem', color: 'rgba(250,250,248,0.75)', fontFamily: "'Poppins',sans-serif", outline: 'none', cursor: 'pointer', flexShrink: 0, transition: 'border-color 0.2s ease' }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(201,169,110,0.8)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(201,169,110,0.4)')}>
+              <option value="+60">🇲🇾 +60</option>
+              <option value="+65">🇸🇬 +65</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+62">🇮🇩 +62</option>
+              <option value="+63">🇵🇭 +63</option>
+              <option value="+66">🇹🇭 +66</option>
+              <option value="+84">🇻🇳 +84</option>
+              <option value="+86">🇨🇳 +86</option>
+              <option value="+81">🇯🇵 +81</option>
+              <option value="+82">🇰🇷 +82</option>
+              <option value="+91">🇮🇳 +91</option>
+            </select>
             <input
               type="tel" value={phone}
               onChange={e => { setPhone(e.target.value); setError('') }}
@@ -177,7 +199,7 @@ function LoginContent() {
             {t('loginCheckWa')}
           </h2>
           <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-            {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>+60 {phone}</span>
+            {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>{countryCode} {phone}</span>
           </p>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }}>
@@ -195,7 +217,10 @@ function LoginContent() {
 
           {error && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error}</p>}
 
-          <button className="btn-gold" style={{ width: '100%' }} onClick={handleVerify}>{t('loginVerify')}</button>
+          <button className="btn-gold" onClick={otpComplete ? handleVerify : undefined}
+            style={{ width: '100%', opacity: otpComplete ? 1 : 0.35, cursor: otpComplete ? 'pointer' : 'not-allowed', animation: otpComplete ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete ? 'auto' : 'none' }}>
+            {t('loginVerify')}
+          </button>
 
           <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>
             {t('loginResendPrefix')}{' '}

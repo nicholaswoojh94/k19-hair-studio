@@ -30,6 +30,7 @@ function RegisterContent() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [otpError, setOtpError] = useState('')
   const [resendTimer, setResendTimer] = useState(0)
+  const [countryCode, setCountryCode] = useState('+60')
   const [langOpen, setLangOpen] = useState(false)
   const [visible, setVisible] = useState(false)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -46,6 +47,7 @@ function RegisterContent() {
   const days = Array.from({ length: 31 }, (_, i) => i + 1)
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 80 }, (_, i) => currentYear - i)
+  const otpComplete = otp.every(d => d !== '')
   const langLabel = lang === 'en' ? 'EN' : lang === 'bm' ? 'BM' : '中文'
 
   function startResend() {
@@ -92,7 +94,7 @@ function RegisterContent() {
     if (code === DUMMY_OTP) {
       try {
         const birthday = bdYear && bdMonth && bdDay ? `${bdYear}-${bdMonth.padStart(2,'0')}-${bdDay.padStart(2,'0')}` : ''
-        localStorage.setItem('k19_user', JSON.stringify({ phone, name, email, birthday }))
+        localStorage.setItem('k19_user', JSON.stringify({ phone: `${countryCode}${phone}`, name, email, birthday }))
         localStorage.setItem('k19-user-name', name)
       } catch { /* ignore */ }
       router.push(redirectTo)
@@ -155,7 +157,7 @@ function RegisterContent() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link href="/">
             <Image src="/brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio"
-              width={200} height={56} style={{ height: 56, width: 'auto', margin: '0 auto' }}/>
+              width={300} height={120} style={{ height: 120, width: 'auto', margin: '0 auto' }}/>
           </Link>
         </div>
         <div style={{ height: 1, background: 'rgba(201,169,110,0.1)', marginBottom: '2rem' }}/>
@@ -171,29 +173,29 @@ function RegisterContent() {
               <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A96E', marginBottom: '0.75rem', fontWeight: 500 }}>
                 Why join K19?
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
                   {
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                     title: 'Loyalty Points',
                     copy: 'Earn points with every visit and redeem for discounts',
                   },
                   {
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+                    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
                     title: 'Birthday Treats',
                     copy: 'Enjoy a special reward during your birthday month',
                   },
                   {
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+                    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
                     title: 'Easy Booking',
                     copy: 'Book, reschedule and manage appointments anytime',
                   },
                 ].map(({ icon, title, copy }) => (
-                  <div key={title} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{ flexShrink: 0, marginTop: 1 }}>{icon}</div>
+                  <div key={title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    {icon}
                     <div>
-                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', fontWeight: 500, color: 'rgba(250,250,248,0.75)' }}>{title}</span>
-                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', color: 'rgba(250,250,248,0.35)', marginLeft: 6 }}>{copy}</span>
+                      <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.875rem', fontWeight: 600, color: '#FAFAF8', margin: 0 }}>{title}</p>
+                      <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', color: 'rgba(250,250,248,0.5)', margin: 0, marginTop: 2, lineHeight: 1.5 }}>{copy}</p>
                     </div>
                   </div>
                 ))}
@@ -203,16 +205,33 @@ function RegisterContent() {
 
             {/* Full Name */}
             <div style={{ marginBottom: '1rem' }}>
-              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regName')}</label>
+              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regName')}<span style={{ color: '#C9A96E', marginLeft: 3 }}>*</span></label>
               <input type="text" value={name} onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })) }} className="k-input" placeholder="Your full name"/>
               {errors.name && <p style={{ fontSize: '0.75rem', color: '#E57373', marginTop: 4, fontFamily: "'Poppins',sans-serif" }}>{errors.name}</p>}
             </div>
 
             {/* Phone */}
             <div style={{ marginBottom: '1rem' }}>
-              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regPhone')}</label>
+              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regPhone')}<span style={{ color: '#C9A96E', marginLeft: 3 }}>*</span></label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(201,169,110,0.2)', borderRadius: 4, padding: '0.75rem 0.875rem', fontSize: '0.9rem', color: 'rgba(250,250,248,0.5)', whiteSpace: 'nowrap' }}>+60</div>
+                <select value={countryCode} onChange={e => setCountryCode(e.target.value)}
+                  style={{ background: '#1C1C1C', border: '1px solid rgba(201,169,110,0.4)', borderRadius: 4, padding: '0.75rem 0.5rem', fontSize: '0.85rem', color: 'rgba(250,250,248,0.75)', fontFamily: "'Poppins',sans-serif", outline: 'none', cursor: 'pointer', flexShrink: 0, transition: 'border-color 0.2s ease' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'rgba(201,169,110,0.8)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(201,169,110,0.4)')}>
+                  <option value="+60">🇲🇾 +60</option>
+                  <option value="+65">🇸🇬 +65</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+62">🇮🇩 +62</option>
+                  <option value="+63">🇵🇭 +63</option>
+                  <option value="+66">🇹🇭 +66</option>
+                  <option value="+84">🇻🇳 +84</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+82">🇰🇷 +82</option>
+                  <option value="+91">🇮🇳 +91</option>
+                </select>
                 <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setErrors(p => ({ ...p, phone: '' })) }} className="k-input" placeholder="11-2778 5730" maxLength={12} style={{ flex: 1 }}/>
               </div>
               {errors.phone && <p style={{ fontSize: '0.75rem', color: '#E57373', marginTop: 4, fontFamily: "'Poppins',sans-serif" }}>{errors.phone}</p>}
@@ -227,7 +246,7 @@ function RegisterContent() {
 
             {/* Birthday */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regBirthday')}</label>
+              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regBirthday')}<span style={{ color: '#C9A96E', marginLeft: 3 }}>*</span></label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select value={bdMonth} onChange={e => { setBdMonth(e.target.value); setErrors(p => ({ ...p, birthday: '' })) }} style={selectStyle}>
                   <option value="" disabled style={{ background: '#1C1C1C' }}>{t('regMonthPh')}</option>
@@ -266,7 +285,7 @@ function RegisterContent() {
 
             <h2 className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.5rem' }}>{t('loginCheckWa')}</h2>
             <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-              {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>+60 {phone}</span>
+              {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>{countryCode} {phone}</span>
             </p>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }}>
@@ -281,7 +300,10 @@ function RegisterContent() {
 
             {otpError && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{otpError}</p>}
 
-            <button className="btn-gold" style={{ width: '100%' }} onClick={handleVerify}>{t('loginVerify')}</button>
+            <button className="btn-gold" onClick={otpComplete ? handleVerify : undefined}
+              style={{ width: '100%', opacity: otpComplete ? 1 : 0.35, cursor: otpComplete ? 'pointer' : 'not-allowed', animation: otpComplete ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete ? 'auto' : 'none' }}>
+              {t('loginVerify')}
+            </button>
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>
               {t('loginResendPrefix')}{' '}

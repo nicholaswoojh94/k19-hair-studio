@@ -263,7 +263,7 @@ export default function BookingPage() {
           {/* Logo */}
           <Link href="/">
             <Image src="/brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio"
-              width={220} height={56} style={{ height: 56, width: 'auto', margin: '0 auto 1.5rem' }}/>
+              width={300} height={120} style={{ height: 120, width: 'auto', margin: '0 auto 1.5rem' }}/>
           </Link>
           {/* Gold rule */}
           <div style={{ width: 48, height: 1, background: '#C9A96E', margin: '0 auto 2rem', opacity: 0.7 }}/>

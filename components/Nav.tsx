@@ -10,7 +10,7 @@ interface NavProps {
   hideBookNow?: boolean
 }
 
-const HIDE_BOOK_NOW_PATHS = ['/booking', '/login', '/register']
+const HIDE_BOOK_NOW_PATHS = ['/booking', '/login', '/register', '/appointments']
 
 export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) {
   const { t, lang, setLang } = useLang()

@@ -1,9 +1,9 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useRef, useEffect } from 'react'
+import { Suspense, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 
@@ -12,9 +12,11 @@ const MONTHS_EN = ['January','February','March','April','May','June','July','Aug
 const MONTHS_BM = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']
 const MONTHS_ZH = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
 
-export default function RegisterPage() {
+function RegisterContent() {
   const { t, lang, setLang } = useLang()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/appointments'
 
   const [step, setStep] = useState<'form' | 'otp'>('form')
   const [name, setName] = useState('')
@@ -66,8 +68,7 @@ export default function RegisterPage() {
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    // Store name for appointments page
-    localStorage.setItem('k19-user-name', name)
+    try { localStorage.setItem('k19-user-name', name) } catch { /* ignore */ }
     setStep('otp')
     setOtp(['', '', '', '', '', ''])
     setAttempts(0)
@@ -89,7 +90,12 @@ export default function RegisterPage() {
   function handleVerify() {
     const code = otp.join('')
     if (code === DUMMY_OTP) {
-      router.push('/appointments')
+      try {
+        const birthday = bdYear && bdMonth && bdDay ? `${bdYear}-${bdMonth.padStart(2,'0')}-${bdDay.padStart(2,'0')}` : ''
+        localStorage.setItem('k19_user', JSON.stringify({ phone, name, email, birthday }))
+        localStorage.setItem('k19-user-name', name)
+      } catch { /* ignore */ }
+      router.push(redirectTo)
     } else {
       const next = attempts + 1; setAttempts(next)
       if (next >= 3) {
@@ -158,7 +164,42 @@ export default function RegisterPage() {
         {step === 'form' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <h1 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.4rem' }}>{t('regTitle')}</h1>
-            <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.75rem' }}>{t('regSub')}</p>
+            <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.25rem' }}>{t('regSub')}</p>
+
+            {/* ── Benefits banner ── */}
+            <div style={{ background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.12)', borderRadius: 6, padding: '0.875rem 1rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A96E', marginBottom: '0.75rem', fontWeight: 500 }}>
+                Why join K19?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {[
+                  {
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                    title: 'Loyalty Points',
+                    copy: 'Earn points with every visit and redeem for discounts',
+                  },
+                  {
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+                    title: 'Birthday Treats',
+                    copy: 'Enjoy a special reward during your birthday month',
+                  },
+                  {
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+                    title: 'Easy Booking',
+                    copy: 'Book, reschedule and manage appointments anytime',
+                  },
+                ].map(({ icon, title, copy }) => (
+                  <div key={title} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{ flexShrink: 0, marginTop: 1 }}>{icon}</div>
+                    <div>
+                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', fontWeight: 500, color: 'rgba(250,250,248,0.75)' }}>{title}</span>
+                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', color: 'rgba(250,250,248,0.35)', marginLeft: 6 }}>{copy}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* ── End benefits ── */}
 
             {/* Full Name */}
             <div style={{ marginBottom: '1rem' }}>
@@ -209,7 +250,7 @@ export default function RegisterPage() {
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem', color: 'rgba(250,250,248,0.35)' }}>
               {t('regHasAccount')}{' '}
-              <Link href="/login" style={{ color: '#C9A96E', textDecoration: 'none' }}>{t('regLoginLink')}</Link>
+              <Link href={`/login${redirectTo !== '/appointments' ? `?redirect=${redirectTo}` : ''}`} style={{ color: '#C9A96E', textDecoration: 'none' }}>{t('regLoginLink')}</Link>
             </p>
           </div>
         )}
@@ -256,4 +297,8 @@ export default function RegisterPage() {
       <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }`}</style>
     </div>
   )
+}
+
+export default function RegisterPage() {
+  return <Suspense fallback={<div style={{ minHeight: '100vh', background: '#1C1C1C' }}/>}><RegisterContent /></Suspense>
 }

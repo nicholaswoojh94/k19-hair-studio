@@ -1,17 +1,19 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useRef, useEffect } from 'react'
+import { Suspense, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 
 const DUMMY_OTP = '123456'
 
-export default function LoginPage() {
+function LoginContent() {
   const { t, lang, setLang } = useLang()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/appointments'
   const [step, setStep] = useState<1 | 2>(1)
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -63,7 +65,11 @@ export default function LoginPage() {
   function handleVerify() {
     const code = otp.join('')
     if (code === DUMMY_OTP) {
-      router.push('/appointments')
+      try {
+        localStorage.setItem('k19_user', JSON.stringify({ phone, name: '', email: '', birthday: '' }))
+        localStorage.setItem('k19-user-name', '')
+      } catch { /* ignore */ }
+      router.push(redirectTo)
     } else {
       const next = attempts + 1
       setAttempts(next)
@@ -155,7 +161,7 @@ export default function LoginPage() {
 
           <p className="font-sans" style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem', color: 'rgba(250,250,248,0.35)' }}>
             {t('loginNoAccount')}{' '}
-            <Link href="/register" style={{ color: '#C9A96E', textDecoration: 'none' }}>{t('loginRegisterLink')}</Link>
+            <Link href={`/register${redirectTo !== '/appointments' ? `?redirect=${redirectTo}` : ''}`} style={{ color: '#C9A96E', textDecoration: 'none' }}>{t('loginRegisterLink')}</Link>
           </p>
         </div>
 
@@ -204,4 +210,8 @@ export default function LoginPage() {
       <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }`}</style>
     </div>
   )
+}
+
+export default function LoginPage() {
+  return <Suspense fallback={<div style={{ minHeight: '100vh', background: '#1C1C1C' }}/>}><LoginContent /></Suspense>
 }

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4
@@ -199,10 +200,31 @@ const inputStyle: React.CSSProperties = {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function BookingPage() {
+  const [authState, setAuthState] = useState<'loading' | 'gated' | 'allowed'>('loading')
   const [step, setStep] = useState<Step>(1)
   const [anim, setAnim] = useState(true)
   const [booking, setBooking] = useState<BookingState>({ service: '', date: null, time: '', name: '', phone: '', email: '' })
   const [errors, setErrors] = useState<Partial<BookingState>>({})
+
+  // Change 2 & 4: auth check + auto-fill on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('k19_user')
+      if (!raw) { setAuthState('gated'); return }
+      const user = JSON.parse(raw) as { phone?: string; name?: string; email?: string }
+      setAuthState('allowed')
+      // Change 4: pre-fill Step 3 fields from stored user data
+      const storedPhone = (user.phone || '').replace(/^\+?60/, '')
+      setBooking(b => ({
+        ...b,
+        name:  user.name  || '',
+        phone: storedPhone,
+        email: user.email || '',
+      }))
+    } catch {
+      setAuthState('gated')
+    }
+  }, [])
 
   // Animate step transitions
   function goStep(next: Step) {
@@ -227,6 +249,45 @@ export default function BookingPage() {
   const formattedDate = booking.date
     ? booking.date.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
     : '—'
+
+  // ── Loading state (brief flash while localStorage is read) ──
+  if (authState === 'loading') {
+    return <div style={{ minHeight: '100vh', background: '#1C1C1C' }}/>
+  }
+
+  // ── Change 2: Auth gate interstitial ──
+  if (authState === 'gated') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 20px 40px' }}>
+        <div style={{ width: '100%', maxWidth: 480, textAlign: 'center' }}>
+          {/* Logo */}
+          <Link href="/">
+            <Image src="/brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio"
+              width={220} height={56} style={{ height: 56, width: 'auto', margin: '0 auto 1.5rem' }}/>
+          </Link>
+          {/* Gold rule */}
+          <div style={{ width: 48, height: 1, background: '#C9A96E', margin: '0 auto 2rem', opacity: 0.7 }}/>
+          {/* Heading */}
+          <h1 style={{ fontFamily: "'Lora',serif", fontSize: 'clamp(2rem,6vw,2.75rem)', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+            Members Only
+          </h1>
+          {/* Subtext */}
+          <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.9rem', color: 'rgba(250,250,248,0.45)', lineHeight: 1.7, maxWidth: 360, margin: '0 auto 2rem' }}>
+            Create a free account to book appointments, earn loyalty points, and unlock exclusive birthday treats.
+          </p>
+          {/* CTAs */}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+            <Link href="/register?redirect=/booking" className="btn-gold" style={{ minWidth: 160 }}>Create Account</Link>
+            <Link href="/login?redirect=/booking" className="btn-outline" style={{ minWidth: 160, height: 48 }}>I have an account</Link>
+          </div>
+          {/* Fine print */}
+          <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.25)', letterSpacing: '0.02em' }}>
+            It&apos;s free. No credit card needed.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#1C1C1C', paddingTop: 88, paddingBottom: 60 }}>

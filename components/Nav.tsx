@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 
@@ -9,8 +10,12 @@ interface NavProps {
   hideBookNow?: boolean
 }
 
-export default function Nav({ hideBookNow = false }: NavProps) {
+const HIDE_BOOK_NOW_PATHS = ['/booking', '/login', '/register']
+
+export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) {
   const { t, lang, setLang } = useLang()
+  const pathname = usePathname()
+  const hideBookNow = hideBookNowProp || HIDE_BOOK_NOW_PATHS.includes(pathname)
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)

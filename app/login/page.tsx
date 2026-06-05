@@ -7,8 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 
-const DUMMY_OTP = '123456'
-
 function LoginContent() {
   const { t, lang, setLang } = useLang()
   const router = useRouter()
@@ -19,6 +17,7 @@ function LoginContent() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [attempts, setAttempts] = useState(0)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [resendTimer, setResendTimer] = useState(0)
   const [countryCode, setCountryCode] = useState('+60')
   const [langOpen, setLangOpen] = useState(false)
@@ -43,14 +42,52 @@ function LoginContent() {
     }, 1000)
   }
 
-  function handleSendOtp() {
-    if (!phone.trim()) { setError('Please enter your phone number.'); return }
+  async function handleSendOtp() {
+    if (!phone) return
+
+    setLoading(true)
     setError('')
-    setStep(2)
-    setOtp(['', '', '', '', '', ''])
-    setAttempts(0)
-    setTimeout(() => otpRefs.current[0]?.focus(), 100)
-    startResend()
+
+    try {
+      const fullPhone = `${countryCode}${phone}`
+
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode })
+      })
+
+      if (loginRes.status === 404) {
+        setError('No account found. Please register first.')
+        setLoading(false)
+        return
+      }
+
+      const otpRes = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone })
+      })
+
+      const otpData = await otpRes.json()
+
+      if (!otpRes.ok) {
+        setError(otpData.error || 'Failed to send OTP')
+        setLoading(false)
+        return
+      }
+
+      setStep(2)
+      setOtp(['', '', '', '', '', ''])
+      setAttempts(0)
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
+      startResend()
+
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleOtpInput(val: string, idx: number) {
@@ -63,25 +100,53 @@ function LoginContent() {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus()
   }
 
-  function handleVerify() {
-    const code = otp.join('')
-    if (code === DUMMY_OTP) {
-      try {
-        localStorage.setItem('k19_user', JSON.stringify({ phone: `${countryCode}${phone}`, name: '', email: '', birthday: '' }))
-        localStorage.setItem('k19-user-name', '')
-      } catch { /* ignore */ }
-      router.push(redirectTo)
-    } else {
-      const next = attempts + 1
-      setAttempts(next)
-      if (next >= 3) {
-        setError(t('loginTooMany'))
-        setTimeout(() => { setStep(1); setError(''); setAttempts(0) }, 2000)
-      } else {
-        setError(t('loginWrongOtp'))
-        setOtp(['', '', '', '', '', ''])
-        setTimeout(() => otpRefs.current[0]?.focus(), 50)
+  async function handleVerifyOtp() {
+    if (!otp.every(d => d !== '')) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const fullPhone = `${countryCode}${phone}`
+
+      const verifyRes = await fetch('/api/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone, code: otp.join('') })
+      })
+
+      const verifyData = await verifyRes.json()
+
+      if (!verifyRes.ok) {
+        setError(verifyData.error || 'Invalid OTP')
+        setLoading(false)
+        return
       }
+
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode })
+      })
+
+      const loginData = await loginRes.json()
+
+      try {
+        localStorage.setItem('k19_user', JSON.stringify({
+          id: loginData.user.id,
+          phone: fullPhone,
+          name: loginData.user.name || '',
+          email: loginData.user.email || '',
+          birthday: loginData.user.birthday || ''
+        }))
+      } catch { /* ignore */ }
+
+      router.push(redirectTo)
+
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -179,7 +244,9 @@ function LoginContent() {
 
           {error && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', fontFamily: "'Poppins',sans-serif" }}>{error}</p>}
 
-          <button className="btn-gold" style={{ width: '100%' }} onClick={handleSendOtp}>{t('loginSendOtp')}</button>
+          <button className="btn-gold" style={{ width: '100%', opacity: loading ? 0.6 : 1 }} onClick={handleSendOtp} disabled={loading}>
+            {loading ? 'Please wait...' : t('loginSendOtp')}
+          </button>
 
           <p className="font-sans" style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem', color: 'rgba(250,250,248,0.35)' }}>
             {t('loginNoAccount')}{' '}
@@ -217,9 +284,9 @@ function LoginContent() {
 
           {error && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error}</p>}
 
-          <button className="btn-gold" onClick={otpComplete ? handleVerify : undefined}
-            style={{ width: '100%', opacity: otpComplete ? 1 : 0.35, cursor: otpComplete ? 'pointer' : 'not-allowed', animation: otpComplete ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete ? 'auto' : 'none' }}>
-            {t('loginVerify')}
+          <button className="btn-gold" onClick={otpComplete && !loading ? handleVerifyOtp : undefined}
+            style={{ width: '100%', opacity: otpComplete && !loading ? 1 : 0.35, cursor: otpComplete && !loading ? 'pointer' : 'not-allowed', animation: otpComplete && !loading ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete && !loading ? 'auto' : 'none' }}>
+            {loading ? 'Please wait...' : t('loginVerify')}
           </button>
 
           <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>

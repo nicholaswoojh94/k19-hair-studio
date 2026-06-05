@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 
-const DUMMY_OTP = '123456'
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const MONTHS_BM = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']
 const MONTHS_ZH = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
@@ -32,6 +31,8 @@ function RegisterContent() {
   const [resendTimer, setResendTimer] = useState(0)
   const [countryCode, setCountryCode] = useState('+60')
   const [langOpen, setLangOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [visible, setVisible] = useState(false)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -66,17 +67,51 @@ function RegisterContent() {
     return errs
   }
 
-  function handleSubmit() {
-    const errs = validate()
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setErrors({})
-    try { localStorage.setItem('k19-user-name', name) } catch { /* ignore */ }
-    setStep('otp')
-    setOtp(['', '', '', '', '', ''])
-    setAttempts(0)
-    setOtpError('')
-    setTimeout(() => otpRefs.current[0]?.focus(), 100)
-    startResend()
+  async function handleSubmit() {
+    if (!name || !phone) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode })
+      })
+
+      if (loginRes.status === 200) {
+        setError('An account already exists with this number. Please login instead.')
+        setLoading(false)
+        return
+      }
+
+      const otpRes = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `${countryCode}${phone}` })
+      })
+
+      const otpData = await otpRes.json()
+
+      if (!otpRes.ok) {
+        setError(otpData.error || 'Failed to send OTP')
+        setLoading(false)
+        return
+      }
+
+      setStep('otp')
+      setOtp(['', '', '', '', '', ''])
+      setAttempts(0)
+      setOtpError('')
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
+      startResend()
+
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleOtpInput(val: string, idx: number) {
@@ -89,25 +124,63 @@ function RegisterContent() {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus()
   }
 
-  function handleVerify() {
-    const code = otp.join('')
-    if (code === DUMMY_OTP) {
-      try {
-        const birthday = bdYear && bdMonth && bdDay ? `${bdYear}-${bdMonth.padStart(2,'0')}-${bdDay.padStart(2,'0')}` : ''
-        localStorage.setItem('k19_user', JSON.stringify({ phone: `${countryCode}${phone}`, name, email, birthday }))
-        localStorage.setItem('k19-user-name', name)
-      } catch { /* ignore */ }
-      router.push(redirectTo)
-    } else {
-      const next = attempts + 1; setAttempts(next)
-      if (next >= 3) {
-        setOtpError(t('loginTooMany'))
-        setTimeout(() => { setStep('form'); setOtpError(''); setAttempts(0) }, 2000)
-      } else {
-        setOtpError(t('loginWrongOtp'))
-        setOtp(['', '', '', '', '', ''])
-        setTimeout(() => otpRefs.current[0]?.focus(), 50)
+  async function handleVerifyOtp() {
+    if (!otp.every(d => d !== '')) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const fullPhone = `${countryCode}${phone}`
+
+      const verifyRes = await fetch('/api/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone, code: otp.join('') })
+      })
+
+      const verifyData = await verifyRes.json()
+
+      if (!verifyRes.ok) {
+        setError(verifyData.error || 'Invalid OTP')
+        setLoading(false)
+        return
       }
+
+      const birthday = bdYear && bdMonth && bdDay
+        ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
+        : null
+
+      const registerRes = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode, name, email: email || null, birthday })
+      })
+
+      const registerData = await registerRes.json()
+
+      if (!registerRes.ok) {
+        setError(registerData.error || 'Failed to create account')
+        setLoading(false)
+        return
+      }
+
+      try {
+        localStorage.setItem('k19_user', JSON.stringify({
+          id: registerData.user.id,
+          phone: fullPhone,
+          name,
+          email,
+          birthday: birthday || ''
+        }))
+      } catch { /* ignore */ }
+
+      router.push(redirectTo)
+
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -265,7 +338,15 @@ function RegisterContent() {
               <p className="font-sans" style={{ fontSize: '0.72rem', color: '#C9A96E', marginTop: '0.5rem', opacity: 0.8 }}>{t('regBirthdayNote')}</p>
             </div>
 
-            <button className="btn-gold" style={{ width: '100%' }} onClick={handleSubmit}>{t('regCta')}</button>
+            <button className="btn-gold" style={{ width: '100%', opacity: loading ? 0.6 : 1 }} onClick={handleSubmit} disabled={loading}>
+              {loading ? 'Please wait...' : t('regCta')}
+            </button>
+
+            {error && (
+              <p style={{ color: '#E57373', fontFamily: "'Poppins',sans-serif", fontSize: '0.8rem', marginTop: '8px', textAlign: 'center' }}>
+                {error}
+              </p>
+            )}
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem', color: 'rgba(250,250,248,0.35)' }}>
               {t('regHasAccount')}{' '}
@@ -298,11 +379,11 @@ function RegisterContent() {
               ))}
             </div>
 
-            {otpError && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{otpError}</p>}
+            {(otpError || error) && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error || otpError}</p>}
 
-            <button className="btn-gold" onClick={otpComplete ? handleVerify : undefined}
-              style={{ width: '100%', opacity: otpComplete ? 1 : 0.35, cursor: otpComplete ? 'pointer' : 'not-allowed', animation: otpComplete ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete ? 'auto' : 'none' }}>
-              {t('loginVerify')}
+            <button className="btn-gold" onClick={otpComplete && !loading ? handleVerifyOtp : undefined}
+              style={{ width: '100%', opacity: otpComplete && !loading ? 1 : 0.35, cursor: otpComplete && !loading ? 'pointer' : 'not-allowed', animation: otpComplete && !loading ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete && !loading ? 'auto' : 'none' }}>
+              {loading ? 'Please wait...' : t('loginVerify')}
             </button>
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>

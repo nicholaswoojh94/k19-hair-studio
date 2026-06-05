@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
+import { Spinner } from '@/components/ui/spinner'
 
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const MONTHS_BM = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']
@@ -338,8 +339,28 @@ function RegisterContent() {
               <p className="font-sans" style={{ fontSize: '0.72rem', color: '#C9A96E', marginTop: '0.5rem', opacity: 0.8 }}>{t('regBirthdayNote')}</p>
             </div>
 
-            <button className="btn-gold" style={{ width: '100%', opacity: loading ? 0.6 : 1 }} onClick={handleSubmit} disabled={loading}>
-              {loading ? 'Please wait...' : t('regCta')}
+            <button
+              className="btn-gold"
+              style={{
+                width: '100%',
+                opacity: loading ? 0.8 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner size={16} color="#1C1C1C" />
+                  <span>Please wait...</span>
+                </>
+              ) : (
+                'Create Account & Verify'
+              )}
             </button>
 
             {error && (
@@ -381,9 +402,30 @@ function RegisterContent() {
 
             {(otpError || error) && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error || otpError}</p>}
 
-            <button className="btn-gold" onClick={otpComplete && !loading ? handleVerifyOtp : undefined}
-              style={{ width: '100%', opacity: otpComplete && !loading ? 1 : 0.35, cursor: otpComplete && !loading ? 'pointer' : 'not-allowed', animation: otpComplete && !loading ? 'shimmer2 2.6s infinite linear' : 'none', pointerEvents: otpComplete && !loading ? 'auto' : 'none' }}>
-              {loading ? 'Please wait...' : t('loginVerify')}
+            <button
+              className="btn-gold"
+              style={{
+                width: '100%',
+                opacity: (!otpComplete || loading) ? 0.35 : 1,
+                cursor: (!otpComplete || loading) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                animation: (!otpComplete || loading) ? 'none' : undefined,
+                pointerEvents: (!otpComplete || loading) ? 'none' : 'auto',
+              }}
+              onClick={handleVerifyOtp}
+              disabled={!otpComplete || loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner size={16} color="#1C1C1C" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                'Verify Code'
+              )}
             </button>
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>

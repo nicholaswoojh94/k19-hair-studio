@@ -87,6 +87,13 @@ const TIME_SLOTS = ['11:00 am','12:00 pm','1:00 pm','2:00 pm','3:00 pm','4:00 pm
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_HEADERS = ['S','M','T','W','T','F','S']
 
+function formatTime(time24: string): string {
+  const [h, m] = time24.split(':').map(Number)
+  const period = h >= 12 ? 'pm' : 'am'
+  const display = h > 12 ? h - 12 : h === 0 ? 12 : h
+  return `${display}:${String(m).padStart(2,'0')} ${period}`
+}
+
 // ─── Calendar ────────────────────────────────────────────────────────────────
 function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d: Date) => void }) {
   const today = new Date(); today.setHours(0,0,0,0)
@@ -205,6 +212,11 @@ export default function BookingPage() {
   const [anim, setAnim] = useState(true)
   const [booking, setBooking] = useState<BookingState>({ service: '', date: null, time: '', name: '', phone: '', email: '' })
   const [errors, setErrors] = useState<Partial<BookingState>>({})
+  const [services, setServices] = useState<any[]>([])
+  const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [bookingError, setBookingError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   // Change 2 & 4: auth check + auto-fill on mount
   useEffect(() => {
@@ -226,6 +238,32 @@ export default function BookingPage() {
     }
   }, [])
 
+  useEffect(() => {
+    async function fetchServices() {
+      const res = await fetch('/api/services')
+      const data = await res.json()
+      if (data.services) setServices(data.services)
+    }
+    fetchServices()
+  }, [])
+
+  async function fetchAvailability(date: Date, serviceId: string) {
+    if (!serviceId) return
+    setSlotsLoading(true)
+    setAvailableSlots([])
+    try {
+      const d = date
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const res = await fetch(`/api/bookings/availability?date=${dateStr}&serviceId=${serviceId}`)
+      const data = await res.json()
+      setAvailableSlots(data.availableSlots || [])
+    } catch {
+      setAvailableSlots([])
+    } finally {
+      setSlotsLoading(false)
+    }
+  }
+
   // Animate step transitions
   function goStep(next: Step) {
     setAnim(false)
@@ -242,8 +280,48 @@ export default function BookingPage() {
     return true
   }
 
-  function handleConfirm() {
-    if (validateDetails()) goStep(4)
+  async function handleConfirm() {
+    if (!validateDetails()) return
+
+    setSubmitting(true)
+    setBookingError('')
+
+    try {
+      const raw = localStorage.getItem('k19_user')
+      if (!raw) {
+        window.location.href = '/login?redirect=/booking'
+        return
+      }
+      const user = JSON.parse(raw)
+
+      const d = booking.date!
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+
+      const res = await fetch('/api/bookings/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          serviceId: booking.service,
+          bookingDate: dateStr,
+          bookingTime: booking.time,
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setBookingError(data.error || 'Failed to create booking. Please try again.')
+        return
+      }
+
+      goStep(4)
+
+    } catch {
+      setBookingError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const formattedDate = booking.date
@@ -324,8 +402,9 @@ export default function BookingPage() {
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '1.75rem' }}>
-                {SERVICES.map(svc => {
+                {services.map(svc => {
                   const sel = booking.service === svc.id
+                  const icon = SERVICES.find(s => s.label === svc.name_en)?.icon ?? SERVICES[0].icon
                   return (
                     <button key={svc.id}
                       onClick={() => setBooking(b => ({ ...b, service: svc.id }))}
@@ -343,8 +422,8 @@ export default function BookingPage() {
                       onMouseOver={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.4)'; (e.currentTarget as HTMLElement).style.color = 'rgba(201,169,110,0.8)' } }}
                       onMouseOut={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.15)'; (e.currentTarget as HTMLElement).style.color = 'rgba(250,250,248,0.65)' } }}
                     >
-                      {svc.icon}
-                      {svc.label}
+                      {icon}
+                      {svc.name_en}
                     </button>
                   )
                 })}
@@ -367,7 +446,10 @@ export default function BookingPage() {
                 Select an available date, then a time slot.
               </p>
 
-              <Calendar selected={booking.date} onSelect={d => setBooking(b => ({ ...b, date: d, time: '' }))}/>
+              <Calendar selected={booking.date} onSelect={d => {
+                setBooking(b => ({ ...b, date: d, time: '' }))
+                fetchAvailability(d, booking.service)
+              }}/>
 
               {/* Time slots */}
               {booking.date && (
@@ -375,28 +457,38 @@ export default function BookingPage() {
                   <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.35)', marginBottom: '0.6rem' }}>
                     Available times
                   </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {TIME_SLOTS.map(slot => {
-                      const sel = booking.time === slot
-                      return (
-                        <button key={slot}
-                          onClick={() => setBooking(b => ({ ...b, time: slot }))}
-                          style={{
-                            padding: '0.5rem 0.25rem', borderRadius: 4, cursor: 'pointer',
-                            border: `1px solid ${sel ? '#C9A96E' : 'rgba(201,169,110,0.18)'}`,
-                            background: sel ? 'rgba(201,169,110,0.1)' : 'transparent',
-                            fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', fontWeight: sel ? 500 : 400,
-                            color: sel ? '#C9A96E' : 'rgba(250,250,248,0.6)',
-                            transition: 'all 0.15s ease', textAlign: 'center',
-                          }}
-                          onMouseOver={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.45)'; (e.currentTarget as HTMLElement).style.color = 'rgba(201,169,110,0.8)' } }}
-                          onMouseOut={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.18)'; (e.currentTarget as HTMLElement).style.color = 'rgba(250,250,248,0.6)' } }}
-                        >
-                          {slot}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {slotsLoading ? (
+                    <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)', textAlign: 'center', padding: '1rem 0' }}>
+                      Checking availability...
+                    </p>
+                  ) : availableSlots.length === 0 ? (
+                    <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)', textAlign: 'center', padding: '1rem 0' }}>
+                      No available slots for this date.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                      {availableSlots.map(slot => {
+                        const sel = booking.time === slot
+                        return (
+                          <button key={slot}
+                            onClick={() => setBooking(b => ({ ...b, time: slot }))}
+                            style={{
+                              padding: '0.5rem 0.25rem', borderRadius: 4, cursor: 'pointer',
+                              border: `1px solid ${sel ? '#C9A96E' : 'rgba(201,169,110,0.18)'}`,
+                              background: sel ? 'rgba(201,169,110,0.1)' : 'transparent',
+                              fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', fontWeight: sel ? 500 : 400,
+                              color: sel ? '#C9A96E' : 'rgba(250,250,248,0.6)',
+                              transition: 'all 0.15s ease', textAlign: 'center',
+                            }}
+                            onMouseOver={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.45)'; (e.currentTarget as HTMLElement).style.color = 'rgba(201,169,110,0.8)' } }}
+                            onMouseOut={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.18)'; (e.currentTarget as HTMLElement).style.color = 'rgba(250,250,248,0.6)' } }}
+                          >
+                            {formatTime(slot)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -464,9 +556,16 @@ export default function BookingPage() {
                 />
               </div>
 
+              {bookingError && (
+                <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center' }}>
+                  {bookingError}
+                </p>
+              )}
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="btn-outline" style={{ flex: 1, height: 44 }} onClick={() => goStep(2)}>← Back</button>
-                <button className="btn-gold" style={{ flex: 2 }} onClick={handleConfirm}>Confirm Booking</button>
+                <button className="btn-gold" style={{ flex: 2, opacity: submitting ? 0.6 : 1 }} onClick={handleConfirm} disabled={submitting}>
+                  {submitting ? 'Please wait...' : 'Confirm Booking'}
+                </button>
               </div>
             </>
           )}
@@ -493,9 +592,9 @@ export default function BookingPage() {
               {/* Summary card */}
               <div style={{ background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: 6, padding: '1.25rem', marginBottom: '1.25rem' }}>
                 {[
-                  { label: 'Service',  value: SERVICES.find(s => s.id === booking.service)?.label ?? '—' },
+                  { label: 'Service',  value: services.find(s => s.id === booking.service)?.name_en ?? '—' },
                   { label: 'Date',     value: formattedDate },
-                  { label: 'Time',     value: booking.time || '—' },
+                  { label: 'Time',     value: booking.time ? formatTime(booking.time) : '—' },
                   { label: 'Name',     value: booking.name || '—' },
                   { label: 'Phone',    value: booking.phone ? `+60 ${booking.phone}` : '—' },
                 ].map(({ label, value }, i, arr) => (

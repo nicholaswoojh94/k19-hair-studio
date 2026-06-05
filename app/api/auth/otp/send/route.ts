@@ -72,9 +72,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, testMode: false })
 
   } catch (err) {
-    console.error('OTP send error:', err)
+    console.error('OTP send error details:', JSON.stringify(err, null, 2))
+    console.error('OTP send error message:', err instanceof Error ? err.message : String(err))
+    console.error('ENV CHECK - URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.error('ENV CHECK - KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     )
   }

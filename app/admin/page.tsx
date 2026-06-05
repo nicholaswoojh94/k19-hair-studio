@@ -106,6 +106,7 @@ export default function AdminDashboard() {
           {(['list', 'calendar'] as const).map(v => (
             <button
               key={v}
+              type="button"
               onClick={() => setView(v)}
               style={{
                 padding: '8px 16px',

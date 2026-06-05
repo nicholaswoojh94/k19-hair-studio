@@ -103,6 +103,10 @@ export default function AdminLoginPage() {
             onChange={e => setEmail(e.target.value)}
             placeholder="kyan@k19hairstudio.com"
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoComplete="email"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             style={{
               width: '100%',
               padding: '10px 14px',
@@ -138,6 +142,7 @@ export default function AdminLoginPage() {
             onChange={e => setPassword(e.target.value)}
             placeholder="••••••••"
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoComplete="current-password"
             style={{
               width: '100%',
               padding: '10px 14px',

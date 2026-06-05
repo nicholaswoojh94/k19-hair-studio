@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { Lora, Poppins } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
-import Nav from '@/components/Nav'
-import WhatsAppButton from '@/components/WhatsAppButton'
+import ConditionalNav from '@/components/ConditionalNav'
+import ConditionalWhatsApp from '@/components/ConditionalWhatsApp'
 
 const lora = Lora({
   subsets: ['latin'],
@@ -35,9 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${lora.variable} ${poppins.variable}`}>
       <body>
         <LanguageProvider>
-          <Nav />
+          <ConditionalNav />
           {children}
-          <WhatsAppButton />
+          <ConditionalWhatsApp />
         </LanguageProvider>
       </body>
     </html>

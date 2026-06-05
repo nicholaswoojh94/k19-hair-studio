@@ -258,7 +258,7 @@ export default function BookingPage() {
   // ── Change 2: Auth gate interstitial ──
   if (authState === 'gated') {
     return (
-      <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 20px 40px' }}>
+      <main style={{ position: 'relative', minHeight: '100vh', background: '#1C1C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '200px 20px 40px', overflowX: 'hidden', maxWidth: '100vw' }}>
         <div style={{ width: '100%', maxWidth: 480, textAlign: 'center' }}>
           {/* Logo */}
           <Link href="/">
@@ -285,12 +285,12 @@ export default function BookingPage() {
             It&apos;s free. No credit card needed.
           </p>
         </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1C1C1C', paddingTop: 88, paddingBottom: 60 }}>
+    <main style={{ position: 'relative', minHeight: '100vh', background: '#1C1C1C', paddingTop: '200px', paddingBottom: '60px', overflowX: 'hidden', maxWidth: '100vw' }}>
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 20px' }}>
 
         {/* Page heading */}
@@ -439,11 +439,11 @@ export default function BookingPage() {
                 <label style={{ display: 'block', fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.35)', marginBottom: '0.45rem' }}>
                   Phone Number
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(201,169,110,0.2)', borderRadius: 4, padding: '0.75rem 0.875rem', fontFamily: "'Poppins',sans-serif", fontSize: '0.88rem', color: 'rgba(250,250,248,0.45)', whiteSpace: 'nowrap' }}>+60</div>
+                <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(201,169,110,0.2)', borderRadius: 4, padding: '0.75rem 0.875rem', fontFamily: "'Poppins',sans-serif", fontSize: '0.88rem', color: 'rgba(250,250,248,0.45)', whiteSpace: 'nowrap', flexShrink: 0 }}>+60</div>
                   <input type="tel" value={booking.phone} placeholder="11-2778 5730" maxLength={12}
                     onChange={e => { setBooking(b => ({ ...b, phone: e.target.value })); setErrors(p => ({ ...p, phone: '' })) }}
-                    style={{ ...inputStyle, flex: 1 }}
+                    style={{ ...inputStyle, flex: 1, minWidth: 0 }}
                     onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,169,110,0.08)' }}
                     onBlur={e => { e.target.style.borderColor = 'rgba(201,169,110,0.2)'; e.target.style.boxShadow = 'none' }}
                   />
@@ -522,6 +522,6 @@ export default function BookingPage() {
 
         </div>
       </div>
-    </div>
+    </main>
   )
 }

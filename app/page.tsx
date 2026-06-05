@@ -60,8 +60,8 @@ export default function HomePage() {
           <div className="relative flex-1 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand_assets/hero_man.png" alt="K19 Hair Studio — men's styling"
-              className="w-full h-full object-cover object-top"
-              style={{ filter: 'grayscale(100%) contrast(1.05)' }}/>
+              className="w-full h-full object-cover"
+              style={{ filter: 'grayscale(100%) contrast(1.05)', objectPosition: '65% center' }}/>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, transparent 40%), linear-gradient(to left, rgba(0,0,0,0.80) 0%, transparent 38%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%), linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 38%)' }}/>
           </div>
           <div className="relative flex-shrink-0" style={{ width: 0, zIndex: 4 }}/>
@@ -98,12 +98,12 @@ export default function HomePage() {
           {/* CTAs */}
           <div className="fade-up flex flex-wrap gap-4 justify-center" style={{ transitionDelay: '0.28s' }}>
             <Link href="/booking" className="btn-gold">{t('heroCta1')}</Link>
-            <Link href="/#services" className="btn-outline">{t('heroCta2')}</Link>
+            <Link href="/#services" className="btn-outline" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)', borderColor: 'rgba(250,250,248,0.7)', boxShadow: '0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(250,250,248,0.1)', backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.2)' }}>{t('heroCta2')}</Link>
           </div>
 
           {/* Scroll hint */}
           <div className="fade-up flex flex-col items-center gap-2 mt-6" style={{ transitionDelay: '0.44s', opacity: 0.5 }}>
-            <span className="font-sans text-xs tracking-widest uppercase" style={{ color: 'rgba(250,250,248,0.6)' }}>{t('heroDiscover')}</span>
+            <span className="font-sans text-xs tracking-widest uppercase" style={{ color: 'rgba(250,250,248,0.75)', textShadow: '0 1px 8px rgba(0,0,0,0.8), 0 2px 16px rgba(0,0,0,0.6)' }}>{t('heroDiscover')}</span>
             <div style={{ width: 1, height: 36, background: 'linear-gradient(to bottom, rgba(201,169,110,0.7), transparent)' }}/>
           </div>
         </div>
@@ -288,75 +288,199 @@ export default function HomePage() {
 
 
       {/* ═══ FOOTER ══════════════════════════════════════════════ */}
-      <footer style={{ background: '#161616', borderTop: '1px solid rgba(201,169,110,0.1)' }} className="py-16 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-10 pb-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            {/* Brand */}
-            <div className="flex flex-col gap-4 max-w-xs">
-              <Image src="/brand_assets/K19_logo_white_transparent.png" alt="K19 Hair Studio" width={260} height={80} style={{ width: 260, height: 'auto', filter: 'opacity(0.75)' }}/>
-              <p className="font-sans text-sm" style={{ lineHeight: 1.7, fontWeight: 300, color: 'rgba(250,250,248,0.35)' }}>{t('footerDesc')}</p>
-              <div className="flex gap-3 mt-1">
-                <a href="https://www.instagram.com/k19_hairstudio/" target="_blank" rel="noopener" className="social-icon" aria-label="Instagram">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                  </svg>
-                </a>
+      <footer style={{ background: '#121212', borderTop: '1px solid rgba(201,169,110,0.08)' }}>
+        <div style={{ maxWidth: '1152px', margin: '0 auto', padding: '72px 32px 48px' }}>
+
+          {/* 3-column grid on desktop, single column on mobile */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '64px',
+            marginBottom: '48px',
+            alignItems: 'flex-start',
+          }}
+          className="footer-grid"
+          >
+
+            {/* COLUMN 1 — Logo + tagline + Instagram */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
+              <div style={{ marginBottom: '20px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/brand_assets/K19_logo_white_transparent.png"
+                  alt="K19 Hair Studio"
+                  style={{ width: '180px', height: 'auto', display: 'block' }}
+                />
               </div>
+              <p style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '0.85rem',
+                color: 'rgba(250,250,248,0.4)',
+                fontWeight: 300,
+                lineHeight: 1.7,
+                margin: '0 0 24px 0',
+              }}>
+                Premium hair studio dedicated to craftsmanship, creativity, and confidence.
+              </p>
+              <a
+                href="https://www.instagram.com/k19_hairstudio/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon"
+                aria-label="Instagram"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                  <circle cx="12" cy="12" r="4"/>
+                  <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+                </svg>
+              </a>
             </div>
 
-            {/* Nav links */}
-            <div className="flex flex-col gap-3">
-              <Link href="/#services" className="nav-link" style={{ fontSize: '0.82rem', color: 'rgba(250,250,248,0.4)' }}>{t('navServices')}</Link>
-              <Link href="/#gallery"  className="nav-link" style={{ fontSize: '0.82rem', color: 'rgba(250,250,248,0.4)' }}>{t('navGallery')}</Link>
-              <Link href="/#about"    className="nav-link" style={{ fontSize: '0.82rem', color: 'rgba(250,250,248,0.4)' }}>{t('navAbout')}</Link>
-              <Link href="/booking"   className="nav-link" style={{ fontSize: '0.82rem', color: 'rgba(250,250,248,0.4)' }}>{t('navBook')}</Link>
+            {/* COLUMN 2 — Business Hours */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
+              <p style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '0.68rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(250,250,248,0.3)',
+                margin: '0 0 16px 0',
+              }}>
+                Business Hours
+              </p>
+              {[
+                { day: 'Sunday', hours: '10:30am – 7pm' },
+                { day: 'Monday', hours: '11am – 8pm' },
+                { day: 'Tuesday', hours: 'Closed', closed: true },
+                { day: 'Wednesday', hours: '11am – 8pm' },
+                { day: 'Thursday', hours: '11am – 8pm' },
+                { day: 'Friday', hours: '11am – 8pm' },
+                { day: 'Saturday', hours: '10:30am – 8pm' },
+              ].map(({ day, hours, closed }) => {
+                const isToday = new Date().toLocaleDateString('en-US', { weekday: 'long' }) === day
+                return (
+                  <div key={day} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 0',
+                    borderBottom: '1px solid rgba(201,169,110,0.06)',
+                  }}>
+                    <span style={{
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: '0.82rem',
+                      fontWeight: isToday ? 500 : 300,
+                      color: isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
+                    }}>
+                      {isToday ? '✦ Today' : day}
+                    </span>
+                    <span style={{
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: '0.82rem',
+                      fontWeight: isToday ? 500 : 300,
+                      color: closed ? 'rgba(250,250,248,0.2)' : isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
+                    }}>
+                      {hours}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Find Us */}
-            <div className="flex flex-col gap-3">
-              <p className="font-sans text-xs tracking-widest uppercase mb-2" style={{ color: 'rgba(250,250,248,0.4)' }}>{t('footerFind')}</p>
-              <p className="font-sans text-sm" style={{ fontWeight: 300, lineHeight: 1.8, color: 'rgba(250,250,248,0.35)' }}>
+            {/* COLUMN 3 — Find Us */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
+              <p style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '0.68rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(250,250,248,0.3)',
+                margin: '0 0 16px 0',
+              }}>
+                Find Us
+              </p>
+              <p style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '0.85rem',
+                color: 'rgba(250,250,248,0.5)',
+                fontWeight: 300,
+                lineHeight: 1.9,
+                margin: '0 0 16px 0',
+              }}>
                 K19 Hair Studio<br/>
                 P2-1-09, The Zizz, 2,<br/>
                 Jalan PJU 10/1a, Damansara Damai,<br/>
                 47830 Petaling Jaya, Selangor
               </p>
-              <p className="font-sans text-sm mt-3" style={{ fontWeight: 300, lineHeight: 1.8, color: 'rgba(250,250,248,0.35)' }}>
-                Thu–Mon, Wed: 11am – 8pm<br/>
-                Sat–Sun: 10:30am – 8pm / 7pm<br/>
-                <span style={{ color: 'rgba(201,169,110,0.5)' }}>Tuesday: Closed</span>
-              </p>
-              <div className="flex gap-3 mt-4">
-                {/* Google Maps */}
-                <a href="https://share.google/Rq4Cle3KQWbN1ezVn" target="_blank" rel="noopener" aria-label="Open in Google Maps"
-                  style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:4, border:'1px solid rgba(201,169,110,0.3)', background:'rgba(201,169,110,0.06)', textDecoration:'none', transition:'all 0.25s ease' }}
-                  onMouseOver={e=>{ const el=e.currentTarget; el.style.borderColor='rgba(201,169,110,0.7)'; el.style.background='rgba(201,169,110,0.12)'; el.style.transform='translateY(-2px)' }}
-                  onMouseOut={e=>{ const el=e.currentTarget; el.style.borderColor='rgba(201,169,110,0.3)'; el.style.background='rgba(201,169,110,0.06)'; el.style.transform='translateY(0)' }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#C9A96E"/><circle cx="12" cy="9" r="2.5" fill="#1C1C1C"/></svg>
-                  <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:'0.72rem', fontWeight:500, letterSpacing:'0.05em', textTransform:'uppercase', color:'#C9A96E' }}>Maps</span>
-                </a>
-                {/* Waze */}
-                <a href="https://ul.waze.com/ul?place=ChIJwdJmyIpFzDERDwVvJS0CVXQ&ll=3.19819460%2C101.59607180&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" target="_blank" rel="noopener" aria-label="Open in Waze"
-                  style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:4, border:'1px solid rgba(201,169,110,0.3)', background:'rgba(201,169,110,0.06)', textDecoration:'none', transition:'all 0.25s ease' }}
-                  onMouseOver={e=>{ const el=e.currentTarget; el.style.borderColor='rgba(201,169,110,0.7)'; el.style.background='rgba(201,169,110,0.12)'; el.style.transform='translateY(-2px)' }}
-                  onMouseOut={e=>{ const el=e.currentTarget; el.style.borderColor='rgba(201,169,110,0.3)'; el.style.background='rgba(201,169,110,0.06)'; el.style.transform='translateY(0)' }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2C7.5 2 4 5.8 4 10.3c0 2.4 1 4.5 2.5 6l.8 3.2 3-1.2c.5.1 1.1.2 1.7.2 4.5 0 8-3.8 8-8.2C20 5.8 16.5 2 12 2z" fill="#C9A96E"/><circle cx="9.5" cy="10" r="1.2" fill="#1C1C1C"/><circle cx="14.5" cy="10" r="1.2" fill="#1C1C1C"/><path d="M9 13s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="#1C1C1C" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>
-                  <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:'0.72rem', fontWeight:500, letterSpacing:'0.05em', textTransform:'uppercase', color:'#C9A96E' }}>Waze</span>
-                </a>
-              </div>
-              <a href="tel:+601127785730" className="font-sans text-sm mt-3 inline-block" style={{ color: 'rgba(201,169,110,0.7)', transition: 'color 0.2s ease', textDecoration: 'none' }}
-                onMouseOver={e=>(e.currentTarget.style.color='#C9A96E')} onMouseOut={e=>(e.currentTarget.style.color='rgba(201,169,110,0.7)')}>
+              <a href="tel:+601127785730" style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '0.85rem',
+                color: 'rgba(201,169,110,0.7)',
+                textDecoration: 'none',
+                display: 'inline-block',
+                marginBottom: '20px',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseOver={e => (e.currentTarget.style.color = '#C9A96E')}
+              onMouseOut={e => (e.currentTarget.style.color = 'rgba(201,169,110,0.7)')}>
                 +60 11-2778 5730
               </a>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <a href="https://share.google/Rq4Cle3KQWbN1ezVn" target="_blank" rel="noopener"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '8px 14px', borderRadius: 4,
+                    border: '1px solid rgba(201,169,110,0.3)',
+                    background: 'rgba(201,169,110,0.06)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor = 'rgba(201,169,110,0.7)'; e.currentTarget.style.background = 'rgba(201,169,110,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)'; e.currentTarget.style.background = 'rgba(201,169,110,0.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#C9A96E"/>
+                    <circle cx="12" cy="9" r="2.5" fill="#1C1C1C"/>
+                  </svg>
+                  <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#C9A96E' }}>Maps</span>
+                </a>
+                <a href="https://ul.waze.com/ul?place=ChIJwdJmyIpFzDERDwVvJS0CVXQ&ll=3.19819460%2C101.59607180&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" target="_blank" rel="noopener"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '8px 14px', borderRadius: 4,
+                    border: '1px solid rgba(201,169,110,0.3)',
+                    background: 'rgba(201,169,110,0.06)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor = 'rgba(201,169,110,0.7)'; e.currentTarget.style.background = 'rgba(201,169,110,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)'; e.currentTarget.style.background = 'rgba(201,169,110,0.06)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C7.5 2 4 5.8 4 10.3c0 2.4 1 4.5 2.5 6l.8 3.2 3-1.2c.5.1 1.1.2 1.7.2 4.5 0 8-3.8 8-8.2C20 5.8 16.5 2 12 2z" fill="#C9A96E"/>
+                    <circle cx="9.5" cy="10" r="1.2" fill="#1C1C1C"/>
+                    <circle cx="14.5" cy="10" r="1.2" fill="#1C1C1C"/>
+                    <path d="M9 13s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="#1C1C1C" strokeWidth="1" strokeLinecap="round" fill="none"/>
+                  </svg>
+                  <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#C9A96E' }}>Waze</span>
+                </a>
+              </div>
             </div>
+
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3 pt-6">
-            <p className="font-sans text-xs" style={{ color: 'rgba(250,250,248,0.2)' }}>{t('footerCopy')}</p>
-            <p className="font-sans text-xs" style={{ color: 'rgba(250,250,248,0.15)' }}>{t('footerCraft')}</p>
+          {/* COPYRIGHT BAR */}
+          <div style={{ height: 1, background: 'rgba(201,169,110,0.08)', marginBottom: '24px' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.2)', margin: 0 }}>
+              © 2026 K19 Hair Studio. All rights reserved.
+            </p>
+            <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.15)', margin: 0 }}>
+              Crafted with care.
+            </p>
           </div>
+
         </div>
       </footer>
     </>

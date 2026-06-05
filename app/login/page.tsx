@@ -89,7 +89,7 @@ function LoginContent() {
   const langLabel = lang === 'en' ? 'EN' : lang === 'bm' ? 'BM' : '中文'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px 40px' }}>
+    <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '200px 20px 40px', overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Lang switcher top-right */}
       <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 200 }} id="langSwitcher">
         <button onClick={() => setLangOpen(v => !v)} className="nav-link flex items-center gap-1"

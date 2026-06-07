@@ -37,7 +37,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       ),
-      comingSoon: true,
     },
     {
       label: 'Services',
@@ -47,7 +46,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
         </svg>
       ),
-      comingSoon: true,
     },
     {
       label: 'Settings',
@@ -58,7 +56,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       ),
-      comingSoon: true,
     },
   ]
 
@@ -103,32 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const isActive = pathname === item.href
             return (
               <div key={item.href}>
-                {item.comingSoon ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '11px 24px',
-                    color: 'rgba(250,250,248,0.25)',
-                    cursor: 'not-allowed',
-                  }}>
-                    {item.icon}
-                    <span style={{ fontSize: '0.85rem' }}>{item.label}</span>
-                    <span style={{
-                      marginLeft: 'auto',
-                      fontSize: '0.6rem',
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(201,169,110,0.4)',
-                      background: 'rgba(201,169,110,0.08)',
-                      padding: '2px 6px',
-                      borderRadius: 3,
-                    }}>
-                      Soon
-                    </span>
-                  </div>
-                ) : (
-                  <Link
+                <Link
                     href={item.href}
                     style={{
                       display: 'flex',
@@ -146,7 +118,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {item.icon}
                     {item.label}
                   </Link>
-                )}
               </div>
             )
           })}

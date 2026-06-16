@@ -42,18 +42,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Customer required' }, { status: 400 })
     }
 
+    // Get global buffer setting
     const { data: bufferSetting } = await supabaseAdmin
       .from('admin_settings')
       .select('value')
       .eq('key', 'buffer_minutes')
       .single()
-    const bufferMinutes = parseInt(bufferSetting?.value || '15')
+    const globalBuffer = parseInt(bufferSetting?.value || '15')
 
+    // Get service duration and per-service buffer override
     const { data: service } = await supabaseAdmin
       .from('services')
-      .select('duration_minutes')
+      .select('duration_minutes, buffer_minutes')
       .eq('id', serviceId)
       .single()
+
+    // Use service-level buffer if set, otherwise fall back to global
+    const bufferMinutes = (service?.buffer_minutes !== null &&
+      service?.buffer_minutes !== undefined)
+      ? service.buffer_minutes
+      : globalBuffer
 
     const [h, m] = bookingTime.split(':').map(Number)
     const endMins = h * 60 + m + (service?.duration_minutes || 60) + bufferMinutes

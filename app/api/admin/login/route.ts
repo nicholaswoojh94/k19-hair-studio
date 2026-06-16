@@ -35,10 +35,6 @@ export async function POST(req: NextRequest) {
 
     const valid = await bcrypt.compare(password, admin.password_hash)
 
-    console.log('Password provided:', password)
-    console.log('Hash in DB:', admin.password_hash)
-    console.log('bcrypt result:', valid)
-
     if (!valid) {
       return NextResponse.json(
         { error: 'Invalid email or password' },

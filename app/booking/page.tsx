@@ -152,6 +152,15 @@ export default function BookingPage() {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [bookingError, setBookingError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['Haircut'])
+
+  function toggleCategory(cat: string) {
+    setExpandedCategories(prev =>
+      prev.includes(cat)
+        ? prev.filter(c => c !== cat)
+        : [...prev, cat]
+    )
+  }
 
   // Change 2 & 4: auth check + auto-fill on mount
   useEffect(() => {
@@ -347,79 +356,163 @@ export default function BookingPage() {
               </p>
 
               <div style={{ marginBottom: '1.75rem' }}>
-                {categoryOrder.filter(cat => groupedServices[cat]?.length > 0).map(category => (
-                  <div key={category} style={{ marginBottom: '24px' }}>
+                {categoryOrder.filter(cat => groupedServices[cat]?.length > 0).map(category => {
+                  const isExpanded = expandedCategories.includes(category)
+                  const services = groupedServices[category]
+                  return (
+                    <div key={category} style={{ marginBottom: '16px' }}>
 
-                    {/* Category header */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      marginBottom: 12,
-                    }}>
-                      <p style={{
-                        fontFamily: "'Poppins',sans-serif",
-                        fontSize: '0.68rem',
-                        fontWeight: 600,
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(201,169,110,0.7)',
-                        margin: 0,
-                      }}>
-                        {category}
-                      </p>
-                      <div style={{
-                        flex: 1,
-                        height: 1,
-                        background: 'rgba(201,169,110,0.15)',
-                      }} />
-                    </div>
-
-                    {/* Service cards grid */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 10,
-                    }}>
-                      {groupedServices[category].map((service: any) => (
-                        <div
-                          key={service.id}
-                          onClick={() => { setSelectedService(service); setBooking(b => ({ ...b, service: service.id })) }}
-                          style={{
-                            padding: '14px 16px',
-                            borderRadius: 6,
-                            border: selectedService?.id === service.id
-                              ? '1.5px solid #C9A96E'
-                              : '1px solid rgba(201,169,110,0.15)',
-                            background: selectedService?.id === service.id
-                              ? 'rgba(201,169,110,0.1)'
-                              : 'rgba(255,255,255,0.03)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
+                      {/* Collapsible category header */}
+                      <button
+                        type="button"
+                        onClick={() => toggleCategory(category)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '8px 0',
+                          marginBottom: isExpanded ? 12 : 0,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <p style={{
                             fontFamily: "'Poppins',sans-serif",
-                            fontSize: '0.82rem',
-                            fontWeight: selectedService?.id === service.id ? 600 : 400,
-                            color: selectedService?.id === service.id ? '#C9A96E' : 'rgba(250,250,248,0.8)',
-                            margin: '0 0 4px',
-                          }}>
-                            {service.name_en}
-                          </p>
-                          <p style={{
-                            fontFamily: "'Poppins',sans-serif",
-                            fontSize: '0.7rem',
-                            color: 'rgba(250,250,248,0.35)',
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            color: 'rgba(201,169,110,0.7)',
                             margin: 0,
                           }}>
-                            ⏱ {service.duration_minutes} min
+                            {category}
                           </p>
+                          <span style={{
+                            fontFamily: "'Poppins',sans-serif",
+                            fontSize: '0.65rem',
+                            color: 'rgba(250,250,248,0.25)',
+                          }}>
+                            {services.length} service{services.length !== 1 ? 's' : ''}
+                          </span>
                         </div>
-                      ))}
+                        <svg
+                          width="14" height="14" viewBox="0 0 14 14" fill="none"
+                          style={{
+                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            color: 'rgba(201,169,110,0.5)',
+                          }}
+                        >
+                          <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+
+                      {/* Divider line */}
+                      <div style={{
+                        height: 1,
+                        background: 'rgba(201,169,110,0.15)',
+                        marginBottom: isExpanded ? 12 : 0,
+                      }} />
+
+                      {/* Service cards — only show when expanded */}
+                      {isExpanded && (
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: services.length % 2 !== 0 ? '1fr' : '1fr 1fr',
+                          gap: 10,
+                        }}>
+                          {services.map((service: any, idx: number) => {
+                            // For odd-count categories, last item goes full width
+                            const isLast = idx === services.length - 1
+                            const isOdd = services.length % 2 !== 0
+                            const shouldBeFullWidth = isOdd && isLast && services.length > 1
+
+                            return (
+                              <div
+                                key={service.id}
+                                onClick={() => { setSelectedService(service); setBooking(b => ({ ...b, service: service.id })) }}
+                                style={{
+                                  gridColumn: shouldBeFullWidth ? 'span 2' : 'span 1',
+                                  padding: '14px 16px',
+                                  borderRadius: 6,
+                                  border: selectedService?.id === service.id
+                                    ? '1.5px solid #C9A96E'
+                                    : '1px solid rgba(201,169,110,0.15)',
+                                  background: selectedService?.id === service.id
+                                    ? 'rgba(201,169,110,0.1)'
+                                    : 'rgba(255,255,255,0.03)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  position: 'relative',
+                                  minHeight: 72,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                {/* Gold checkmark when selected */}
+                                {selectedService?.id === service.id && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    right: 8,
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: '50%',
+                                    background: '#C9A96E',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}>
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                      <path d="M2 5L4 7L8 3" stroke="#1C1C1C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                )}
+                                <p style={{
+                                  fontFamily: "'Poppins',sans-serif",
+                                  fontSize: '0.82rem',
+                                  fontWeight: selectedService?.id === service.id ? 600 : 400,
+                                  color: selectedService?.id === service.id
+                                    ? '#C9A96E'
+                                    : 'rgba(250,250,248,0.8)',
+                                  margin: '0 0 4px',
+                                  paddingRight: selectedService?.id === service.id ? 24 : 0,
+                                }}>
+                                  {service.name_en}
+                                </p>
+                                <p style={{
+                                  fontFamily: "'Poppins',sans-serif",
+                                  fontSize: '0.7rem',
+                                  color: 'rgba(250,250,248,0.35)',
+                                  margin: 0,
+                                }}>
+                                  ⏱ {service.duration_minutes} min
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
+
+                {!selectedService && (
+                  <p style={{
+                    fontFamily: "'Poppins',sans-serif",
+                    fontSize: '0.75rem',
+                    color: 'rgba(250,250,248,0.25)',
+                    textAlign: 'center',
+                    margin: '16px 0 0',
+                    fontStyle: 'italic',
+                  }}>
+                    Select a service above to continue
+                  </p>
+                )}
               </div>
 
               <button className="btn-gold" style={{ width: '100%', opacity: booking.service ? 1 : 0.4, cursor: booking.service ? 'pointer' : 'not-allowed' }}

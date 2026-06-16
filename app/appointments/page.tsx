@@ -63,7 +63,7 @@ export default function AppointmentsPage() {
 
   return (
     <main style={{ position: 'relative', minHeight: '100vh', background: '#1C1C1C', paddingTop: '200px', paddingBottom: '80px' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 24px' }}>
+      <div className="appointments-content" style={{ maxWidth: 600, margin: '0 auto', padding: '0 24px' }}>
 
         {/* Greeting */}
         <div style={{
@@ -75,6 +75,53 @@ export default function AppointmentsPage() {
             {t(greetKey)}{userName ? `, ${userName}` : ''}.
           </h1>
           <div style={{ width: 48, height: 1, background: '#C9A96E', marginTop: '1rem', opacity: 0.7 }}/>
+        </div>
+
+        {/* Book Now banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #242424, #2A2A2A)',
+          border: '1px solid rgba(201,169,110,0.2)',
+          borderRadius: 10,
+          padding: '20px 24px',
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div>
+            <p style={{
+              fontFamily: "'Lora',serif",
+              fontSize: '1rem',
+              fontStyle: 'italic',
+              color: '#FAFAF8',
+              margin: '0 0 4px',
+            }}>
+              Ready for your next visit?
+            </p>
+            <p style={{
+              fontFamily: "'Poppins',sans-serif",
+              fontSize: '0.78rem',
+              color: 'rgba(250,250,248,0.4)',
+              margin: 0,
+              fontWeight: 300,
+            }}>
+              Book an appointment in under 2 minutes.
+            </p>
+          </div>
+          <Link
+            href="/booking"
+            className="btn-gold"
+            style={{
+              fontSize: '0.72rem',
+              height: 40,
+              padding: '0 20px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              marginLeft: 16,
+            }}
+          >
+            Book Now
+          </Link>
         </div>
 
         {/* Tabs */}
@@ -266,6 +313,31 @@ export default function AppointmentsPage() {
           )
         )}
 
+      </div>
+
+      {/* Mobile sticky Book Now button */}
+      <div style={{
+        position: 'fixed',
+        bottom: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 50,
+        display: 'none', // hidden on desktop
+      }} className="mobile-book-btn">
+        <Link
+          href="/booking"
+          className="btn-gold"
+          style={{
+            fontSize: '0.8rem',
+            height: 48,
+            padding: '0 32px',
+            borderRadius: 24,
+            boxShadow: '0 4px 20px rgba(201,169,110,0.3), 0 2px 8px rgba(0,0,0,0.3)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          ✦ Book Appointment
+        </Link>
       </div>
     </main>
   )

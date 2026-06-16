@@ -236,6 +236,12 @@
       grid-template-columns: 1fr !important;
       gap: 40px !important;
     }
+    .mobile-book-btn {
+      display: block !important;
+    }
+    .appointments-content {
+      padding-bottom: 80px !important;
+    }
   }
 }
 

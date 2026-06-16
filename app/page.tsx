@@ -42,7 +42,7 @@ export default function HomePage() {
     <>
       {/* ═══ HERO ═══════════════════════════════════════════════ */}
       <section
-        className="grain relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden"
+        className="hero-section grain relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden"
         style={{ background: '#000' }}
       >
         {/* Bottom fade */}
@@ -56,7 +56,7 @@ export default function HomePage() {
         </div>
 
         {/* Split photos — CRITICAL: do not modify */}
-        <div className="absolute inset-0 flex" style={{ zIndex: 2, pointerEvents: 'none' }}>
+        <div className="hero-desktop absolute inset-0 flex" style={{ zIndex: 2, pointerEvents: 'none' }}>
           <div className="relative flex-1 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand_assets/hero_man.png" alt="K19 Hair Studio — men's styling"
@@ -72,6 +72,32 @@ export default function HomePage() {
               style={{ filter: 'grayscale(100%) contrast(1.05)' }}/>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.82) 0%, transparent 40%), linear-gradient(to right, rgba(0,0,0,0.80) 0%, transparent 38%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%), linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 38%)' }}/>
           </div>
+        </div>
+
+        {/* Mobile hero image — single Unsplash photo, mobile only */}
+        <div className="hero-mobile" style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: 'none',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80&auto=format&fit=crop"
+            alt="K19 Hair Studio"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              filter: 'grayscale(100%) contrast(1.05)',
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.7) 100%)',
+          }} />
         </div>
 
         {/* Hero content */}

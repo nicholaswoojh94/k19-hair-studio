@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
 
     const valid = await bcrypt.compare(password, admin.password_hash)
 
+    console.log('Password provided:', password)
+    console.log('Hash in DB:', admin.password_hash)
+    console.log('bcrypt result:', valid)
+
     if (!valid) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
@@ -70,9 +74,10 @@ export async function POST(req: NextRequest) {
     return response
 
   } catch (err) {
-    console.error('Admin login error:', err)
+    console.error('Admin login error:', JSON.stringify(err))
+    console.error('Admin login error message:', err instanceof Error ? err.message : String(err))
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', detail: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     )
   }

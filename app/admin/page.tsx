@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/spinner'
+import { Toast } from '@/components/ui/toast'
 
 type Booking = {
   id: string
@@ -119,6 +120,14 @@ export default function AdminDashboard() {
   const [rescheduleServiceId, setRescheduleServiceId] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
   const [rescheduleError, setRescheduleError] = useState('')
+
+  const [showToast, setShowToast] = useState(false)
+  const [toastMsg, setToastMsg] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+
+  const [blockModalTab, setBlockModalTab] = useState<'block' | 'unblock'>('block')
+  const [confirmUnblockId, setConfirmUnblockId] = useState<string | null>(null)
+  const [removingBlock, setRemovingBlock] = useState(false)
 
   useEffect(() => {
     fetchAllBookings()
@@ -333,7 +342,7 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <button type="button"
-            onClick={() => setShowBlockModal(true)}
+            onClick={() => { setShowBlockModal(true); setBlockModalTab('block') }}
             style={{
               padding: '10px 16px',
               background: 'transparent',
@@ -343,7 +352,7 @@ export default function AdminDashboard() {
               cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
               marginRight: 8,
             }}>
-            🔒 Block Slot
+            🔒 Block / Unblock Slot
           </button>
           <button
             type="button"
@@ -1191,14 +1200,73 @@ export default function AdminDashboard() {
             zIndex: 101, fontFamily: "'Poppins',sans-serif",
             padding: '28px',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>
-                Block Time Slot
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 20
+            }}>
+              <h2 style={{
+                fontSize: '1.1rem', fontWeight: 600,
+                color: '#1C1C1C', margin: 0
+              }}>
+                Block / Unblock Slot
               </h2>
-              <button type="button" onClick={() => { setShowBlockModal(false); setBlockError('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.4)', fontSize: '1.2rem', padding: 4 }}>✕</button>
+              <button type="button"
+                onClick={() => {
+                  setShowBlockModal(false)
+                  setBlockError('')
+                  setConfirmUnblockId(null)
+                }}
+                style={{
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', color: 'rgba(0,0,0,0.4)',
+                  fontSize: '1.2rem', padding: 4
+                }}>✕</button>
             </div>
 
+            {/* Tabs */}
+            <div style={{
+              display: 'flex',
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+              marginBottom: 24
+            }}>
+              {[
+                { key: 'block', label: '🔒 Block Time Slot' },
+                { key: 'unblock', label: '🔓 Unblock Time Slot' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setBlockModalTab(tab.key as any)
+                    setBlockError('')
+                    setConfirmUnblockId(null)
+                  }}
+                  style={{
+                    padding: '10px 16px',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Poppins',sans-serif",
+                    fontSize: '0.8rem',
+                    fontWeight: blockModalTab === tab.key ? 600 : 400,
+                    color: blockModalTab === tab.key ? '#1C1C1C' : 'rgba(0,0,0,0.4)',
+                    borderBottom: blockModalTab === tab.key
+                      ? '2px solid #C9A96E'
+                      : '2px solid transparent',
+                    marginBottom: -1,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {blockModalTab === 'block' && (
+            <>
             {/* Date */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Date</label>
@@ -1289,6 +1357,9 @@ export default function AdminDashboard() {
                     setBlockReason('')
                     setBlockError('')
                     await fetchAllBookings()
+                    setToastMsg('Time slot blocked successfully.')
+                    setToastType('success')
+                    setShowToast(true)
                   }
                 } finally {
                   setSavingBlock(false)
@@ -1309,9 +1380,206 @@ export default function AdminDashboard() {
               }}>
               {savingBlock ? <><Spinner size={16} color="#1C1C1C" /> Saving...</> : '🔒 Block Slot'}
             </button>
+            </>
+            )}
+
+            {blockModalTab === 'unblock' && (
+              <div>
+                {blockedSlots.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 0'
+                  }}>
+                    <p style={{ fontSize: '2rem', margin: '0 0 8px' }}>✅</p>
+                    <p style={{
+                      fontSize: '0.88rem', fontWeight: 500,
+                      color: '#1C1C1C', margin: '0 0 4px'
+                    }}>
+                      No blocked slots
+                    </p>
+                    <p style={{
+                      fontSize: '0.78rem',
+                      color: 'rgba(0,0,0,0.35)', margin: 0
+                    }}>
+                      There are currently no blocked time slots.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    maxHeight: 360,
+                    overflowY: 'auto'
+                  }}>
+                    {blockedSlots.map(block => (
+                      <div key={block.id} style={{
+                        background: 'rgba(229,115,115,0.05)',
+                        border: '1px solid rgba(229,115,115,0.15)',
+                        borderRadius: 8,
+                        padding: '14px 16px',
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start'
+                        }}>
+                          <div>
+                            <p style={{
+                              fontSize: '0.88rem', fontWeight: 600,
+                              color: '#1C1C1C', margin: '0 0 4px'
+                            }}>
+                              {new Date(block.block_date + 'T00:00:00')
+                                .toLocaleDateString('en-MY', {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                            </p>
+                            <p style={{
+                              fontSize: '0.75rem',
+                              color: 'rgba(0,0,0,0.45)',
+                              margin: '0 0 2px'
+                            }}>
+                              {block.is_full_day
+                                ? '🔒 Full Day Block'
+                                : `🔒 ${formatTime(block.start_time)} – ${formatTime(block.end_time)}`}
+                            </p>
+                            {block.reason && (
+                              <p style={{
+                                fontSize: '0.72rem',
+                                color: 'rgba(0,0,0,0.35)',
+                                margin: 0,
+                                fontStyle: 'italic'
+                              }}>
+                                {block.reason}
+                              </p>
+                            )}
+                          </div>
+
+                          {confirmUnblockId === block.id ? (
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 6,
+                              alignItems: 'flex-end',
+                              flexShrink: 0,
+                              marginLeft: 12
+                            }}>
+                              <p style={{
+                                fontSize: '0.7rem',
+                                color: '#C62828',
+                                margin: 0,
+                                fontWeight: 500
+                              }}>
+                                Confirm remove?
+                              </p>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button
+                                  type="button"
+                                  disabled={removingBlock}
+                                  onClick={async () => {
+                                    setRemovingBlock(true)
+                                    try {
+                                      const res = await fetch(
+                                        `/api/admin/blocked-slots/${block.id}`,
+                                        { method: 'DELETE' }
+                                      )
+                                      if (res.ok) {
+                                        setConfirmUnblockId(null)
+                                        await fetchAllBookings()
+                                        setToastMsg('Block removed successfully.')
+                                        setToastType('success')
+                                        setShowToast(true)
+                                        // Close modal if no more blocks
+                                        if (blockedSlots.length <= 1) {
+                                          setShowBlockModal(false)
+                                        }
+                                      }
+                                    } finally {
+                                      setRemovingBlock(false)
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '5px 12px',
+                                    background: '#E57373',
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    color: '#FFFFFF',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    cursor: removingBlock ? 'not-allowed' : 'pointer',
+                                    fontFamily: "'Poppins',sans-serif",
+                                  }}
+                                >
+                                  {removingBlock ? 'Removing...' : 'Yes, Remove'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmUnblockId(null)}
+                                  style={{
+                                    padding: '5px 10px',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(0,0,0,0.15)',
+                                    borderRadius: 4,
+                                    color: 'rgba(0,0,0,0.5)',
+                                    fontSize: '0.72rem',
+                                    cursor: 'pointer',
+                                    fontFamily: "'Poppins',sans-serif",
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmUnblockId(block.id)}
+                              style={{
+                                padding: '6px 14px',
+                                background: 'transparent',
+                                border: '1.5px solid rgba(229,115,115,0.4)',
+                                borderRadius: 6,
+                                color: '#E57373',
+                                fontSize: '0.75rem',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                fontFamily: "'Poppins',sans-serif",
+                                flexShrink: 0,
+                                marginLeft: 12,
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseOver={e => {
+                                e.currentTarget.style.borderColor = '#E57373'
+                                e.currentTarget.style.background = 'rgba(229,115,115,0.06)'
+                              }}
+                              onMouseOut={e => {
+                                e.currentTarget.style.borderColor = 'rgba(229,115,115,0.4)'
+                                e.currentTarget.style.background = 'transparent'
+                              }}
+                            >
+                              Unblock
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
+
+      <Toast
+        message={toastMsg}
+        type={toastType}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
 
       <style>{`
         @keyframes shimmer2 {

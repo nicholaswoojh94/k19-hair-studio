@@ -25,12 +25,10 @@ export async function POST(req: NextRequest) {
       .eq('key', 'buffer_minutes')
       .single()
 
-    const bufferMinutes = parseInt(bufferSetting?.value || '15')
-
     // Get service duration
     const { data: service } = await supabaseAdmin
       .from('services')
-      .select('duration_minutes')
+      .select('duration_minutes, buffer_minutes')
       .eq('id', serviceId)
       .single()
 
@@ -40,6 +38,12 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       )
     }
+
+    const serviceBuffer = service.buffer_minutes
+    const globalBuffer = parseInt(bufferSetting?.value || '15')
+    const bufferMinutes = serviceBuffer !== null && serviceBuffer !== undefined
+      ? serviceBuffer
+      : globalBuffer
 
     // Calculate end time including buffer
     const [hours, minutes] = bookingTime.split(':').map(Number)

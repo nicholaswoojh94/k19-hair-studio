@@ -17,72 +17,6 @@ interface BookingState {
   email: string
 }
 
-// ─── Service definitions ──────────────────────────────────────────────────────
-const SERVICES = [
-  {
-    id: 'haircut-men',
-    label: 'Haircut (Men)',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
-        <line x1="9" y1="8" x2="20" y2="17"/><line x1="9" y1="16" x2="20" y2="7"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'haircut-women',
-    label: 'Haircut (Women)',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <path d="M12 2c-2 4-4 5-4 9a4 4 0 0 0 8 0c0-4-2-5-4-9z"/>
-        <line x1="12" y1="2" x2="12" y2="0.5"/>
-        <path d="M9 20.5c1 .5 2 .5 3 .5s2 0 3-.5"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'colour-highlights',
-    label: 'Colour & Highlights',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <path d="M12 2l2.5 8H19l-4 3 1.5 5L12 15l-4.5 3L9 13 5 10h4.5z"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'balayage',
-    label: 'Balayage',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <path d="M7 3c0 6 4 8 4 13a4 4 0 0 1-8 0c0-3 2-4 2-7"/>
-        <path d="M17 3c0 6-4 8-4 13"/>
-        <line x1="5" y1="10" x2="9" y2="12"/><line x1="15" y1="10" x2="19" y2="8"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'keratin',
-    label: 'Keratin Treatment',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <path d="M12 3C8 7 6 10 6 14a6 6 0 0 0 12 0c0-4-2-7-6-11z"/>
-        <path d="M12 10c-1 2-1.5 3-1.5 4a1.5 1.5 0 0 0 3 0c0-1-.5-2-1.5-4z" fill="rgba(201,169,110,0.25)"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'scalp',
-    label: 'Scalp Treatment',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="1.4" strokeLinecap="round">
-        <path d="M12 3a9 9 0 0 1 9 9v1a9 9 0 0 1-18 0v-1a9 9 0 0 1 9-9z"/>
-        <path d="M9 12c0-1.7 1.3-3 3-3s3 1.3 3 3"/><line x1="12" y1="16" x2="12" y2="18"/>
-        <line x1="8" y1="14.5" x2="6.5" y2="16"/><line x1="16" y1="14.5" x2="17.5" y2="16"/>
-      </svg>
-    ),
-  },
-]
-
 const TIME_SLOTS = ['11:00 am','12:00 pm','1:00 pm','2:00 pm','3:00 pm','4:00 pm','5:00 pm','6:00 pm','7:00 pm']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_HEADERS = ['S','M','T','W','T','F','S']
@@ -213,6 +147,7 @@ export default function BookingPage() {
   const [booking, setBooking] = useState<BookingState>({ service: '', date: null, time: '', name: '', phone: '', email: '' })
   const [errors, setErrors] = useState<Partial<BookingState>>({})
   const [services, setServices] = useState<any[]>([])
+  const [selectedService, setSelectedService] = useState<any>(null)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [bookingError, setBookingError] = useState('')
@@ -305,6 +240,7 @@ export default function BookingPage() {
           serviceId: booking.service,
           bookingDate: dateStr,
           bookingTime: booking.time,
+          serviceBufferMinutes: selectedService?.buffer_minutes || null,
         })
       })
 
@@ -327,6 +263,15 @@ export default function BookingPage() {
   const formattedDate = booking.date
     ? booking.date.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
     : '—'
+
+  const groupedServices = services.reduce((acc: any, service: any) => {
+    const cat = service.category || 'General'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(service)
+    return acc
+  }, {})
+
+  const categoryOrder = ['Haircut', 'Wash', 'Chemical', 'Treatment', 'General']
 
   // ── Loading state (brief flash while localStorage is read) ──
   if (authState === 'loading') {
@@ -401,32 +346,80 @@ export default function BookingPage() {
                 Choose the service you&apos;d like.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '1.75rem' }}>
-                {services.map(svc => {
-                  const sel = booking.service === svc.id
-                  const icon = SERVICES.find(s => s.label === svc.name_en)?.icon ?? SERVICES[0].icon
-                  return (
-                    <button key={svc.id}
-                      onClick={() => setBooking(b => ({ ...b, service: svc.id }))}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        gap: 10, padding: '1rem 0.75rem',
-                        background: sel ? 'rgba(201,169,110,0.1)' : 'rgba(255,255,255,0.03)',
-                        border: `1.5px solid ${sel ? '#C9A96E' : 'rgba(201,169,110,0.15)'}`,
-                        borderRadius: 6, cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', fontWeight: sel ? 500 : 400,
-                        color: sel ? '#C9A96E' : 'rgba(250,250,248,0.65)',
-                        textAlign: 'center', lineHeight: 1.3,
-                      }}
-                      onMouseOver={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.4)'; (e.currentTarget as HTMLElement).style.color = 'rgba(201,169,110,0.8)' } }}
-                      onMouseOut={e => { if (!sel) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,169,110,0.15)'; (e.currentTarget as HTMLElement).style.color = 'rgba(250,250,248,0.65)' } }}
-                    >
-                      {icon}
-                      {svc.name_en}
-                    </button>
-                  )
-                })}
+              <div style={{ marginBottom: '1.75rem' }}>
+                {categoryOrder.filter(cat => groupedServices[cat]?.length > 0).map(category => (
+                  <div key={category} style={{ marginBottom: '24px' }}>
+
+                    {/* Category header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      marginBottom: 12,
+                    }}>
+                      <p style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: '0.68rem',
+                        fontWeight: 600,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(201,169,110,0.7)',
+                        margin: 0,
+                      }}>
+                        {category}
+                      </p>
+                      <div style={{
+                        flex: 1,
+                        height: 1,
+                        background: 'rgba(201,169,110,0.15)',
+                      }} />
+                    </div>
+
+                    {/* Service cards grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                    }}>
+                      {groupedServices[category].map((service: any) => (
+                        <div
+                          key={service.id}
+                          onClick={() => { setSelectedService(service); setBooking(b => ({ ...b, service: service.id })) }}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: 6,
+                            border: selectedService?.id === service.id
+                              ? '1.5px solid #C9A96E'
+                              : '1px solid rgba(201,169,110,0.15)',
+                            background: selectedService?.id === service.id
+                              ? 'rgba(201,169,110,0.1)'
+                              : 'rgba(255,255,255,0.03)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <p style={{
+                            fontFamily: "'Poppins',sans-serif",
+                            fontSize: '0.82rem',
+                            fontWeight: selectedService?.id === service.id ? 600 : 400,
+                            color: selectedService?.id === service.id ? '#C9A96E' : 'rgba(250,250,248,0.8)',
+                            margin: '0 0 4px',
+                          }}>
+                            {service.name_en}
+                          </p>
+                          <p style={{
+                            fontFamily: "'Poppins',sans-serif",
+                            fontSize: '0.7rem',
+                            color: 'rgba(250,250,248,0.35)',
+                            margin: 0,
+                          }}>
+                            ⏱ {service.duration_minutes} min
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button className="btn-gold" style={{ width: '100%', opacity: booking.service ? 1 : 0.4, cursor: booking.service ? 'pointer' : 'not-allowed' }}

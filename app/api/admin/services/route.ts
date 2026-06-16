@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         price_to: price_to || null,
         sort_order: sort_order || 99,
         is_active: true,
+        category: body.category || 'General',
+        buffer_minutes: body.buffer_minutes ? parseInt(body.buffer_minutes) : null,
       })
       .select()
       .single()

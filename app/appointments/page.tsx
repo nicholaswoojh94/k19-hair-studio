@@ -171,12 +171,6 @@ export default function AppointmentsPage() {
                       Confirmed
                     </span>
                   </div>
-                  {booking.services?.price_from && (
-                    <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)', margin: 0, fontWeight: 300 }}>
-                      From RM {booking.services.price_from}
-                      {booking.services.price_to ? ` – RM ${booking.services.price_to}` : ''}
-                    </p>
-                  )}
                 </div>
               ))}
             </div>

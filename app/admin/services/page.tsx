@@ -8,7 +8,9 @@ type Service = {
   name_en: string
   name_bm: string | null
   name_zh: string | null
+  category: string | null
   duration_minutes: number
+  buffer_minutes: number | null
   price_from: number | null
   price_to: number | null
   is_active: boolean
@@ -31,8 +33,10 @@ const labelStyle: React.CSSProperties = {
 
 const emptyService = {
   name_en: '', name_bm: '', name_zh: '',
-  duration_minutes: 60, price_from: '', price_to: '',
-  sort_order: 99, is_active: true,
+  category: 'Haircut',
+  duration_minutes: 60,
+  buffer_minutes: '',
+  sort_order: 99,
 }
 
 export default function AdminServices() {
@@ -64,8 +68,9 @@ export default function AdminServices() {
     setForm({
       name_en: s.name_en, name_bm: s.name_bm || '',
       name_zh: s.name_zh || '',
+      category: s.category || 'Haircut',
       duration_minutes: s.duration_minutes,
-      price_from: s.price_from ?? '', price_to: s.price_to ?? '',
+      buffer_minutes: s.buffer_minutes ?? '',
       sort_order: s.sort_order, is_active: s.is_active,
     })
   }
@@ -81,8 +86,7 @@ export default function AdminServices() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          price_from: form.price_from !== '' ? parseFloat(form.price_from) : null,
-          price_to: form.price_to !== '' ? parseFloat(form.price_to) : null,
+          buffer_minutes: form.buffer_minutes ? parseInt(form.buffer_minutes) : null,
           duration_minutes: parseInt(form.duration_minutes),
           is_active: form.is_active !== false,
         })
@@ -107,7 +111,9 @@ export default function AdminServices() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name_en: s.name_en, name_bm: s.name_bm, name_zh: s.name_zh,
+        category: s.category,
         duration_minutes: s.duration_minutes,
+        buffer_minutes: s.buffer_minutes,
         price_from: s.price_from, price_to: s.price_to,
         sort_order: s.sort_order, is_active: !s.is_active,
       })
@@ -121,7 +127,20 @@ export default function AdminServices() {
         <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 16px' }}>
           {editingId ? 'Edit Service' : 'Add New Service'}
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div>
+            <label style={labelStyle}>Category</label>
+            <select
+              value={form.category || 'Haircut'}
+              onChange={e => setForm((p: any) => ({ ...p, category: e.target.value }))}
+              style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
+            >
+              <option value="Haircut">Haircut</option>
+              <option value="Wash">Wash</option>
+              <option value="Chemical">Chemical</option>
+              <option value="Treatment">Treatment</option>
+            </select>
+          </div>
           {[
             { label: 'Name (English) *', key: 'name_en', placeholder: 'e.g. Haircut (Men)' },
             { label: 'Name (BM)', key: 'name_bm', placeholder: 'e.g. Gunting Rambut' },
@@ -137,22 +156,40 @@ export default function AdminServices() {
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
-          {[
-            { label: 'Duration (min) *', key: 'duration_minutes', placeholder: '60', type: 'number' },
-            { label: 'Price From (RM)', key: 'price_from', placeholder: '80', type: 'number' },
-            { label: 'Price To (RM)', key: 'price_to', placeholder: '150 (optional)', type: 'number' },
-            { label: 'Sort Order', key: 'sort_order', placeholder: '1', type: 'number' },
-          ].map(f => (
-            <div key={f.key}>
-              <label style={labelStyle}>{f.label}</label>
-              <input type={f.type} value={form[f.key]} placeholder={f.placeholder}
-                onChange={e => setForm((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
-            </div>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div>
+            <label style={labelStyle}>Duration (min) *</label>
+            <input type="number" value={form.duration_minutes} placeholder="60"
+              onChange={e => setForm((p: any) => ({ ...p, duration_minutes: e.target.value }))}
+              style={inputStyle}
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+          </div>
+          <div>
+            <label style={labelStyle}>Buffer Time (min)</label>
+            <input
+              type="number"
+              value={form.buffer_minutes || ''}
+              onChange={e => setForm((p: any) => ({ ...p, buffer_minutes: e.target.value }))}
+              style={inputStyle}
+              placeholder="e.g. 15"
+              min="0"
+              max="60"
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+            />
+            <p style={{ fontSize: '0.68rem', color: 'rgba(0,0,0,0.35)', margin: '4px 0 0' }}>
+              Override global buffer for this service
+            </p>
+          </div>
+          <div>
+            <label style={labelStyle}>Sort Order</label>
+            <input type="number" value={form.sort_order} placeholder="1"
+              onChange={e => setForm((p: any) => ({ ...p, sort_order: e.target.value }))}
+              style={inputStyle}
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button type="button" onClick={handleSave} disabled={saving || !form.name_en}
@@ -219,6 +256,15 @@ export default function AdminServices() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>{s.name_en}</h3>
+                  <span style={{
+                    fontSize: '0.62rem', fontWeight: 600,
+                    color: '#C9A96E',
+                    background: 'rgba(201,169,110,0.1)',
+                    padding: '2px 8px', borderRadius: 3,
+                    marginLeft: 8,
+                  }}>
+                    {s.category}
+                  </span>
                   {!s.is_active && (
                     <span style={{ fontSize: '0.62rem', color: '#E57373', background: 'rgba(229,115,115,0.1)', padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>
                       DISABLED
@@ -226,9 +272,9 @@ export default function AdminServices() {
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 20 }}>
-                  <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.45)', margin: 0 }}>⏱ {s.duration_minutes} min</p>
                   <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.45)', margin: 0 }}>
-                    💰 {s.price_from ? `RM ${s.price_from}${s.price_to ? ` – RM ${s.price_to}` : ''}` : 'No price set'}
+                    ⏱ {s.duration_minutes} min
+                    {s.buffer_minutes ? ` + ${s.buffer_minutes} min buffer` : ''}
                   </p>
                   {s.name_bm && <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.3)', margin: 0 }}>{s.name_bm}</p>}
                   {s.name_zh && <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.3)', margin: 0 }}>{s.name_zh}</p>}

@@ -26,6 +26,8 @@ export async function PATCH(
         price_to: body.price_to || null,
         is_active: body.is_active,
         sort_order: body.sort_order,
+        category: body.category,
+        buffer_minutes: body.buffer_minutes ? parseInt(body.buffer_minutes) : null,
       })
       .eq('id', id)
       .select()

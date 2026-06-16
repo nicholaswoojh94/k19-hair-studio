@@ -56,9 +56,31 @@ export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('k19_user')
-      setUser(stored ? JSON.parse(stored) : null)
-      const pts = localStorage.getItem('k19_loyalty')
-      setLoyaltyPoints(pts ? parseInt(pts, 10) || 0 : 0)
+      if (stored) {
+        const u = JSON.parse(stored)
+        setUser(u)
+
+        // Fetch real loyalty balance
+        if (u.id) {
+          fetch(`/api/loyalty?userId=${u.id}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.balance !== undefined) {
+                setLoyaltyPoints(data.balance)
+              }
+            })
+            .catch(() => {
+              // Fall back to localStorage if fetch fails
+              const pts = localStorage.getItem('k19_loyalty')
+              setLoyaltyPoints(pts ? parseInt(pts, 10) || 0 : 0)
+            })
+        } else {
+          setLoyaltyPoints(0)
+        }
+      } else {
+        setUser(null)
+        setLoyaltyPoints(0)
+      }
     } catch { /* ignore */ }
   }, [pathname])
 

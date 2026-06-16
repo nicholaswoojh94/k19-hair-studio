@@ -12,6 +12,8 @@ export default function AppointmentsPage() {
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([])
   const [historyBookings, setHistoryBookings] = useState<any[]>([])
   const [loadingBookings, setLoadingBookings] = useState(true)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -57,6 +59,46 @@ export default function AppointmentsPage() {
     }
     setTimeout(() => setVisible(true), 80)
   }, [])
+
+  async function handleCancel(bookingId: string) {
+    setCancellingId(bookingId)
+    setCancelError(null)
+    try {
+      const stored = localStorage.getItem('k19_user')
+      if (!stored) return
+      const user = JSON.parse(stored)
+
+      const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCancelError(data.error || 'Failed to cancel booking.')
+      } else {
+        // Refresh bookings
+        if (user.id) {
+          const res2 = await fetch(`/api/bookings/user?userId=${user.id}`)
+          const data2 = await res2.json()
+          if (data2.bookings) {
+            const today = new Date().toISOString().split('T')[0]
+            setUpcomingBookings(data2.bookings.filter((b: any) =>
+              b.status === 'confirmed' && b.booking_date >= today
+            ))
+            setHistoryBookings(data2.bookings.filter((b: any) =>
+              b.status === 'completed' ||
+              b.status === 'cancelled' ||
+              b.status === 'no_show' ||
+              (b.status === 'confirmed' && b.booking_date < today)
+            ))
+          }
+        }
+      }
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   const hour = new Date().getHours()
   const greetKey = hour < 12 ? 'apptGreetMorning' : hour < 18 ? 'apptGreetAfternoon' : 'apptGreetEvening'
@@ -218,8 +260,52 @@ export default function AppointmentsPage() {
                       Confirmed
                     </span>
                   </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                    <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.3)', margin: 0, fontStyle: 'italic' }}>
+                      Cancel up to 24hrs before your appointment
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(booking.id)}
+                      disabled={cancellingId === booking.id}
+                      style={{
+                        background: 'none',
+                        border: '1px solid rgba(229,115,115,0.3)',
+                        borderRadius: 4,
+                        padding: '4px 12px',
+                        color: 'rgba(229,115,115,0.7)',
+                        fontSize: '0.72rem',
+                        cursor: cancellingId === booking.id ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Poppins',sans-serif",
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                        marginLeft: 12,
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.borderColor = '#E57373'
+                        e.currentTarget.style.color = '#E57373'
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.borderColor = 'rgba(229,115,115,0.3)'
+                        e.currentTarget.style.color = 'rgba(229,115,115,0.7)'
+                      }}
+                    >
+                      {cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
+                    </button>
+                  </div>
                 </div>
               ))}
+              {cancelError && (
+                <div style={{
+                  background: 'rgba(229,115,115,0.08)',
+                  border: '1px solid rgba(229,115,115,0.2)',
+                  borderRadius: 8, padding: '12px 16px', marginTop: 12,
+                }}>
+                  <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.8rem', color: '#E57373', margin: 0 }}>
+                    {cancelError}
+                  </p>
+                </div>
+              )}
             </div>
           )
         )}

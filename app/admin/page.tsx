@@ -103,6 +103,23 @@ export default function AdminDashboard() {
   const [addError, setAddError] = useState('')
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>()
 
+  const [blockedSlots, setBlockedSlots] = useState<any[]>([])
+  const [showBlockModal, setShowBlockModal] = useState(false)
+  const [blockDate, setBlockDate] = useState(todayStr)
+  const [blockIsFullDay, setBlockIsFullDay] = useState(false)
+  const [blockStartTime, setBlockStartTime] = useState('09:00')
+  const [blockEndTime, setBlockEndTime] = useState('17:00')
+  const [blockReason, setBlockReason] = useState('')
+  const [blockError, setBlockError] = useState('')
+  const [savingBlock, setSavingBlock] = useState(false)
+  const [panelVisible, setPanelVisible] = useState(false)
+  const [rescheduleMode, setRescheduleMode] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [rescheduleServiceId, setRescheduleServiceId] = useState('')
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState('')
+
   useEffect(() => {
     fetchAllBookings()
     fetchServices()
@@ -113,12 +130,18 @@ export default function AdminDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allBookings, calView, currentDate])
 
+  useEffect(() => {
+    fetchBlockedSlots()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calView, currentDate])
+
   async function fetchAllBookings() {
     setLoading(true)
     try {
       const res = await fetch('/api/admin/bookings?filter=all')
       const data = await res.json()
       setAllBookings(data.bookings || [])
+      await fetchBlockedSlots()
     } catch (err) {
       console.error(err)
     } finally {
@@ -130,6 +153,31 @@ export default function AdminDashboard() {
     const res = await fetch('/api/services')
     const data = await res.json()
     setServices(data.services || [])
+  }
+
+  async function fetchBlockedSlots() {
+    try {
+      const params = calView === 'day'
+        ? `date=${currentDate.toISOString().split('T')[0]}`
+        : `month=${currentDate.getMonth() + 1}&year=${currentDate.getFullYear()}`
+      const res = await fetch(`/api/admin/blocked-slots?${params}`)
+      const data = await res.json()
+      setBlockedSlots(data.blocks || [])
+    } catch (err) {
+      console.error('Failed to fetch blocked slots:', err)
+    }
+  }
+
+  function openBookingPanel(booking: Booking) {
+    setSelectedBooking(booking)
+    setTimeout(() => setPanelVisible(true), 10)
+  }
+
+  function closePanel() {
+    setPanelVisible(false)
+    setTimeout(() => setSelectedBooking(null), 300)
+    setRescheduleMode(false)
+    setRescheduleError('')
   }
 
   function filterBookingsForView() {
@@ -181,7 +229,7 @@ export default function AdminDashboard() {
       })
       if (res.ok) {
         await fetchAllBookings()
-        setSelectedBooking(null)
+        closePanel()
       }
     } finally {
       setUpdatingId(null)
@@ -283,24 +331,39 @@ export default function AdminDashboard() {
             {today.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => openAddModal(todayStr, '')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 20px',
-            background: 'linear-gradient(110deg, #A8833E 0%, #A8833E 35%, #F0D090 50%, #A8833E 65%, #A8833E 100%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer2 2.6s infinite linear',
-            border: '1.5px solid rgba(201,169,110,0.6)',
-            borderRadius: 6, color: '#1C1C1C',
-            fontSize: '0.78rem', fontWeight: 600,
-            letterSpacing: '0.06em', textTransform: 'uppercase',
-            cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
-          }}
-        >
-          + Add Booking
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button type="button"
+            onClick={() => setShowBlockModal(true)}
+            style={{
+              padding: '10px 16px',
+              background: 'transparent',
+              border: '1.5px solid rgba(0,0,0,0.15)',
+              borderRadius: 6, color: 'rgba(0,0,0,0.6)',
+              fontSize: '0.78rem', fontWeight: 500,
+              cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+              marginRight: 8,
+            }}>
+            🔒 Block Slot
+          </button>
+          <button
+            type="button"
+            onClick={() => openAddModal(todayStr, '')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px',
+              background: 'linear-gradient(110deg, #A8833E 0%, #A8833E 35%, #F0D090 50%, #A8833E 65%, #A8833E 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer2 2.6s infinite linear',
+              border: '1.5px solid rgba(201,169,110,0.6)',
+              borderRadius: 6, color: '#1C1C1C',
+              fontSize: '0.78rem', fontWeight: 600,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+            }}
+          >
+            + Add Booking
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -397,6 +460,13 @@ export default function AdminDashboard() {
               {TIME_SLOTS.map(slot => {
                 const booking = bookings.find(b => b.booking_time.slice(0, 5) === slot)
                 const sc = booking ? STATUS_CONFIG[booking.status] : null
+                const dateStr = currentDate.toISOString().split('T')[0]
+                const isBlocked = blockedSlots.some(b => {
+                  if (b.block_date !== dateStr) return false
+                  if (b.is_full_day) return true
+                  const slotTime = slot + ':00'
+                  return slotTime >= b.start_time && slotTime < b.end_time
+                })
                 return (
                   <div key={slot} style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.04)', minHeight: 60 }}>
                     <div style={{
@@ -407,8 +477,11 @@ export default function AdminDashboard() {
                       {formatTime(slot + ':00')}
                     </div>
                     <div
-                      style={{ flex: 1, padding: '8px 16px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                      onClick={() => booking ? setSelectedBooking(booking) : openAddModal(currentDate.toISOString().split('T')[0], slot)}
+                      style={{ flex: 1, padding: '8px 16px', display: 'flex', alignItems: 'center', cursor: booking || !isBlocked ? 'pointer' : 'default' }}
+                      onClick={() => {
+                        if (booking) openBookingPanel(booking)
+                        else if (!isBlocked) openAddModal(dateStr, slot)
+                      }}
                     >
                       {booking ? (
                         <div style={{
@@ -431,6 +504,38 @@ export default function AdminDashboard() {
                           }}>
                             {sc?.label}
                           </span>
+                        </div>
+                      ) : isBlocked ? (
+                        <div style={{
+                          width: '100%', height: 44, borderRadius: 6,
+                          background: 'rgba(229,115,115,0.08)',
+                          border: '1px solid rgba(229,115,115,0.2)',
+                          display: 'flex', alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0 12px',
+                        }}>
+                          <p style={{ fontSize: '0.72rem', color: 'rgba(229,115,115,0.7)', margin: 0 }}>
+                            🔒 Blocked
+                          </p>
+                          {(() => {
+                            const block = blockedSlots.find(b => {
+                              if (b.block_date !== dateStr) return false
+                              if (b.is_full_day) return true
+                              const slotTime = slot + ':00'
+                              return slotTime >= b.start_time && slotTime < b.end_time
+                            })
+                            return block ? (
+                              <button type="button"
+                                onClick={async e => {
+                                  e.stopPropagation()
+                                  await fetch(`/api/admin/blocked-slots/${block.id}`, { method: 'DELETE' })
+                                  await fetchAllBookings()
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(229,115,115,0.6)', fontSize: '0.7rem', padding: 0 }}>
+                                Remove
+                              </button>
+                            ) : null
+                          })()}
                         </div>
                       ) : (
                         <div
@@ -493,7 +598,7 @@ export default function AdminDashboard() {
                   return (
                     <div key={i}
                       style={{ padding: '4px', borderRight: i < 6 ? '1px solid rgba(0,0,0,0.04)' : 'none', cursor: 'pointer' }}
-                      onClick={() => booking ? setSelectedBooking(booking) : openAddModal(dStr, slot)}
+                      onClick={() => booking ? openBookingPanel(booking) : openAddModal(dStr, slot)}
                     >
                       {booking && sc && (
                         <div style={{
@@ -563,7 +668,7 @@ export default function AdminDashboard() {
                           const sc = STATUS_CONFIG[b.status]
                           return (
                             <div key={b.id}
-                              onClick={e => { e.stopPropagation(); setSelectedBooking(b) }}
+                              onClick={e => { e.stopPropagation(); openBookingPanel(b) }}
                               style={{
                                 background: sc.bg, border: `1px solid ${sc.border}`,
                                 borderRadius: 3, padding: '2px 6px', marginBottom: 2, cursor: 'pointer',
@@ -593,8 +698,13 @@ export default function AdminDashboard() {
       {selectedBooking && (
         <>
           <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 100 }}
-            onClick={() => setSelectedBooking(null)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: panelVisible ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0)',
+              zIndex: 100,
+              transition: 'background 0.3s ease',
+            }}
+            onClick={closePanel}
           />
           <div style={{
             position: 'fixed', top: 0, right: 0, bottom: 0, width: 380,
@@ -602,13 +712,15 @@ export default function AdminDashboard() {
             boxShadow: '-4px 0 24px rgba(0,0,0,0.12)',
             display: 'flex', flexDirection: 'column',
             fontFamily: "'Poppins',sans-serif",
+            transform: panelVisible ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}>
             <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>
                   Appointment Details
                 </h2>
-                <button type="button" onClick={() => setSelectedBooking(null)}
+                <button type="button" onClick={closePanel}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.4)', fontSize: '1.2rem', padding: 4 }}>
                   ✕
                 </button>
@@ -685,6 +797,100 @@ export default function AdminDashboard() {
 
             {selectedBooking.status === 'confirmed' && (
               <div style={{ padding: '20px 28px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {rescheduleMode ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: '0.68rem', fontWeight: 600, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
+                      Reschedule Appointment
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>New Date</label>
+                        <input type="date" value={rescheduleDate}
+                          onChange={e => setRescheduleDate(e.target.value)}
+                          min={todayStr}
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                          onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                          onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>New Time</label>
+                        <select value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                          <option value="">Select time...</option>
+                          {TIME_SLOTS.map(slot => (
+                            <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>Service</label>
+                        <select value={rescheduleServiceId} onChange={e => setRescheduleServiceId(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                          {services.map(s => (
+                            <option key={s.id} value={s.id}>{s.name_en}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {rescheduleError && (
+                        <p style={{ color: '#E53935', fontSize: '0.78rem', margin: 0 }}>{rescheduleError}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button type="button"
+                          onClick={async () => {
+                            if (!rescheduleDate || !rescheduleTime || !rescheduleServiceId) {
+                              setRescheduleError('Please fill in all fields.')
+                              return
+                            }
+                            setRescheduling(true)
+                            setRescheduleError('')
+                            try {
+                              const res = await fetch(`/api/admin/bookings/${selectedBooking?.id}/reschedule`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  bookingDate: rescheduleDate,
+                                  bookingTime: rescheduleTime,
+                                  serviceId: rescheduleServiceId,
+                                })
+                              })
+                              const data = await res.json()
+                              if (!res.ok) {
+                                setRescheduleError(data.error || 'Failed to reschedule.')
+                              } else {
+                                await fetchAllBookings()
+                                closePanel()
+                                setRescheduleMode(false)
+                              }
+                            } finally {
+                              setRescheduling(false)
+                            }
+                          }}
+                          disabled={rescheduling}
+                          style={{ flex: 1, padding: '9px', background: '#C9A96E', border: 'none', borderRadius: 6, color: '#1C1C1C', fontSize: '0.78rem', fontWeight: 600, cursor: rescheduling ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {rescheduling ? <><Spinner size={12} color="#1C1C1C" /> Saving...</> : 'Confirm Reschedule'}
+                        </button>
+                        <button type="button" onClick={() => { setRescheduleMode(false); setRescheduleError('') }}
+                          style={{ padding: '9px 16px', background: 'transparent', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, color: 'rgba(0,0,0,0.5)', fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'Poppins',sans-serif" }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  selectedBooking?.status === 'confirmed' && (
+                    <button type="button"
+                      onClick={() => {
+                        setRescheduleMode(true)
+                        setRescheduleDate(selectedBooking.booking_date)
+                        setRescheduleTime(selectedBooking.booking_time.slice(0,5))
+                        setRescheduleServiceId(selectedBooking.services?.id || '')
+                        setRescheduleError('')
+                      }}
+                      style={{ width: '100%', padding: '10px', background: 'transparent', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, color: '#1C1C1C', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', fontFamily: "'Poppins',sans-serif", marginBottom: 12 }}>
+                      📅 Reschedule
+                    </button>
+                  )
+                )}
                 <button type="button"
                   onClick={() => updateStatus(selectedBooking.id, 'completed')}
                   disabled={!!updatingId}
@@ -967,6 +1173,142 @@ export default function AdminDashboard() {
                 )}
               </button>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── BLOCK SLOT MODAL ── */}
+      {showBlockModal && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }}
+            onClick={() => { setShowBlockModal(false); setBlockError('') }} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '100%', maxWidth: 440,
+            background: '#FFFFFF', borderRadius: 12,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+            zIndex: 101, fontFamily: "'Poppins',sans-serif",
+            padding: '28px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>
+                Block Time Slot
+              </h2>
+              <button type="button" onClick={() => { setShowBlockModal(false); setBlockError('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.4)', fontSize: '1.2rem', padding: 4 }}>✕</button>
+            </div>
+
+            {/* Date */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Date</label>
+              <input type="date" value={blockDate} onChange={e => setBlockDate(e.target.value)}
+                min={todayStr}
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+            </div>
+
+            {/* Full day toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F8F6', borderRadius: 8, padding: '14px 16px', marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 2px' }}>Block Entire Day</p>
+                <p style={{ fontSize: '0.72rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>No bookings will be accepted for this date</p>
+              </div>
+              <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
+                <input type="checkbox" checked={blockIsFullDay} onChange={e => setBlockIsFullDay(e.target.checked)}
+                  style={{ opacity: 0, width: 0, height: 0 }} />
+                <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: blockIsFullDay ? '#C9A96E' : 'rgba(0,0,0,0.15)', borderRadius: 24, transition: 'background 0.2s ease' }} />
+                <span style={{ position: 'absolute', top: 3, left: blockIsFullDay ? 23 : 3, width: 18, height: 18, background: '#FFFFFF', borderRadius: '50%', transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </label>
+            </div>
+
+            {/* Time range — only show if not full day */}
+            {!blockIsFullDay && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Start Time</label>
+                  <select value={blockStartTime} onChange={e => setBlockStartTime(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                    {TIME_SLOTS.map(slot => (
+                      <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>End Time</label>
+                  <select value={blockEndTime} onChange={e => setBlockEndTime(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                    {TIME_SLOTS.map(slot => (
+                      <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Reason */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
+                Reason (optional)
+              </label>
+              <input type="text" value={blockReason} onChange={e => setBlockReason(e.target.value)}
+                placeholder="e.g. Public holiday, personal leave"
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+            </div>
+
+            {blockError && (
+              <div style={{ background: 'rgba(229,83,83,0.08)', border: '1px solid rgba(229,83,83,0.2)', borderRadius: 6, padding: '12px 16px', marginBottom: 16 }}>
+                <p style={{ color: '#C62828', fontSize: '0.8rem', margin: 0, lineHeight: 1.5 }}>{blockError}</p>
+              </div>
+            )}
+
+            <button type="button"
+              onClick={async () => {
+                setSavingBlock(true)
+                setBlockError('')
+                try {
+                  const res = await fetch('/api/admin/blocked-slots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      blockDate,
+                      startTime: blockIsFullDay ? null : blockStartTime,
+                      endTime: blockIsFullDay ? null : blockEndTime,
+                      isFullDay: blockIsFullDay,
+                      reason: blockReason,
+                    })
+                  })
+                  const data = await res.json()
+                  if (!res.ok) {
+                    setBlockError(data.error || 'Failed to block slot.')
+                  } else {
+                    setShowBlockModal(false)
+                    setBlockReason('')
+                    setBlockError('')
+                    await fetchAllBookings()
+                  }
+                } finally {
+                  setSavingBlock(false)
+                }
+              }}
+              disabled={savingBlock}
+              style={{
+                width: '100%', padding: '12px',
+                background: 'linear-gradient(110deg, #A8833E 0%, #A8833E 35%, #F0D090 50%, #A8833E 65%, #A8833E 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer2 2.6s infinite linear',
+                border: '1.5px solid rgba(201,169,110,0.6)',
+                borderRadius: 6, color: '#1C1C1C',
+                fontSize: '0.82rem', fontWeight: 600,
+                cursor: savingBlock ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                fontFamily: "'Poppins',sans-serif",
+              }}>
+              {savingBlock ? <><Spinner size={16} color="#1C1C1C" /> Saving...</> : '🔒 Block Slot'}
+            </button>
           </div>
         </>
       )}

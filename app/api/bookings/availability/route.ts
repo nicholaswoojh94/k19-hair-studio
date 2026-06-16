@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
       .eq('booking_date', date)
       .eq('status', 'confirmed')
 
+    // Get blocked slots for this date
+    const { data: blockedSlots } = await supabaseAdmin
+      .from('blocked_slots')
+      .select('*')
+      .eq('block_date', date)
+
     // All possible slots 11am - 7pm
     const allSlots = [
       '11:00', '12:00', '13:00', '14:00',
@@ -63,6 +69,16 @@ export async function GET(req: NextRequest) {
 
       // Check if slot ends before 8pm (1200 minutes)
       if (slotEnd > 20 * 60) return false
+
+      // Check against blocked slots
+      const isBlockedBySlot = (blockedSlots || []).some(b => {
+        if (b.is_full_day) return true
+        const slotStartStr = `${String(Math.floor(slotStart/60)).padStart(2,'0')}:${String(slotStart%60).padStart(2,'0')}:00`
+        const slotEndStr = `${String(Math.floor(slotEnd/60)).padStart(2,'0')}:${String(slotEnd%60).padStart(2,'0')}:00`
+        return slotStartStr < b.end_time && slotEndStr > b.start_time
+      })
+
+      if (isBlockedBySlot) return false
 
       // Check conflicts with existing bookings
       if (!existingBookings) return true

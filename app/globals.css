@@ -17,6 +17,30 @@
     overflow-x: hidden;
     max-width: 100vw;
   }
+
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color: #1C1C1C !important;
+    color-scheme: light !important;
+    background-color: #FAFAFA !important;
+  }
+
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="time"]::-webkit-datetime-edit,
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+  input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+  input[type="date"]::-webkit-datetime-edit-text,
+  input[type="time"]::-webkit-datetime-edit-text,
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field,
+  input[type="time"]::-webkit-datetime-edit-hour-field,
+  input[type="time"]::-webkit-datetime-edit-minute-field,
+  input[type="time"]::-webkit-datetime-edit-ampm-field {
+    color: #1C1C1C !important;
+    background: transparent !important;
+  }
 }
 
 @layer components {

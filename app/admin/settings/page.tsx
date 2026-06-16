@@ -172,7 +172,7 @@ export default function AdminSettings() {
               <label style={labelStyle}>Opening Time</label>
               <input type="time" value={settings.booking_start_time || '11:00'}
                 onChange={e => updateSetting('booking_start_time', e.target.value)}
-                style={inputStyle}
+                style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
             </div>
@@ -180,7 +180,7 @@ export default function AdminSettings() {
               <label style={labelStyle}>Closing Time</label>
               <input type="time" value={settings.booking_end_time || '20:00'}
                 onChange={e => updateSetting('booking_end_time', e.target.value)}
-                style={inputStyle}
+                style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
             </div>

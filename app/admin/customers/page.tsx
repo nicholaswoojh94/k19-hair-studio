@@ -283,7 +283,7 @@ export default function AdminCustomers() {
                 </div>
                 <div>
                   <label style={labelStyle}>Birthday</label>
-                  <input type="date" value={editBirthday} onChange={e => setEditBirthday(e.target.value)} style={inputStyle}
+                  <input type="date" value={editBirthday} onChange={e => setEditBirthday(e.target.value)} style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
                 </div>
@@ -381,7 +381,7 @@ export default function AdminCustomers() {
                 </div>
                 <div>
                   <label style={labelStyle}>Expires</label>
-                  <input type="date" value={voucherExpiry} onChange={e => setVoucherExpiry(e.target.value)} style={inputStyle}
+                  <input type="date" value={voucherExpiry} onChange={e => setVoucherExpiry(e.target.value)} style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
                 </div>

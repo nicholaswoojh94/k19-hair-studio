@@ -817,7 +817,7 @@ export default function AdminDashboard() {
                         <input type="date" value={rescheduleDate}
                           onChange={e => setRescheduleDate(e.target.value)}
                           min={todayStr}
-                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box', color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                           onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                           onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
                       </div>
@@ -1096,6 +1096,7 @@ export default function AdminDashboard() {
                     border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6,
                     fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif",
                     outline: 'none', background: '#FAFAFA', color: '#1C1C1C', boxSizing: 'border-box',
+                    colorScheme: 'light',
                   }}
                 />
               </div>
@@ -1272,7 +1273,7 @@ export default function AdminDashboard() {
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Date</label>
               <input type="date" value={blockDate} onChange={e => setBlockDate(e.target.value)}
                 min={todayStr}
-                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box', color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
             </div>
@@ -1296,8 +1297,25 @@ export default function AdminDashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Start Time</label>
-                  <select value={blockStartTime} onChange={e => setBlockStartTime(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                  <select
+                    value={blockStartTime}
+                    onChange={e => setBlockStartTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1.5px solid rgba(0,0,0,0.12)',
+                      borderRadius: 6,
+                      fontSize: '0.85rem',
+                      fontFamily: "'Poppins',sans-serif",
+                      outline: 'none',
+                      background: '#FAFAFA',
+                      color: '#1C1C1C',
+                      colorScheme: 'light',
+                      appearance: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Select time...</option>
                     {TIME_SLOTS.map(slot => (
                       <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
                     ))}
@@ -1305,8 +1323,25 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>End Time</label>
-                  <select value={blockEndTime} onChange={e => setBlockEndTime(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                  <select
+                    value={blockEndTime}
+                    onChange={e => setBlockEndTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1.5px solid rgba(0,0,0,0.12)',
+                      borderRadius: 6,
+                      fontSize: '0.85rem',
+                      fontFamily: "'Poppins',sans-serif",
+                      outline: 'none',
+                      background: '#FAFAFA',
+                      color: '#1C1C1C',
+                      colorScheme: 'light',
+                      appearance: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Select time...</option>
                     {TIME_SLOTS.map(slot => (
                       <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
                     ))}

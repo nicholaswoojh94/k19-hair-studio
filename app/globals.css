@@ -20,23 +20,6 @@
 }
 
 @layer components {
-  /* ── Hero responsive image swap ── */
-  .hero-section .hero-desktop {
-    display: flex;
-  }
-  .hero-section .hero-mobile {
-    display: none;
-  }
-
-  @media (max-width: 768px) {
-    .hero-section .hero-desktop {
-      display: none;
-    }
-    .hero-section .hero-mobile {
-      display: block;
-    }
-  }
-
   /* ── Shimmer button ── */
   .btn-gold {
     display: inline-flex;

@@ -55,27 +55,8 @@ export default function HomePage() {
           <div style={{ height: 1, background: 'linear-gradient(to right, transparent, rgba(201,169,110,0.12), transparent)', margin: '0 auto', maxWidth: 800 }}/>
         </div>
 
-        {/* Split photos — CRITICAL: do not modify */}
-        <div className="hero-desktop absolute inset-0 flex" style={{ zIndex: 2, pointerEvents: 'none' }}>
-          <div className="relative flex-1 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand_assets/hero_man.png" alt="K19 Hair Studio — men's styling"
-              className="w-full h-full object-cover"
-              style={{ filter: 'grayscale(100%) contrast(1.05)', objectPosition: '65% center' }}/>
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, transparent 40%), linear-gradient(to left, rgba(0,0,0,0.80) 0%, transparent 38%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%), linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 38%)' }}/>
-          </div>
-          <div className="relative flex-shrink-0" style={{ width: 0, zIndex: 4 }}/>
-          <div className="relative flex-1 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand_assets/hero_woman.png" alt="K19 Hair Studio — women's styling"
-              className="w-full h-full object-cover object-top"
-              style={{ filter: 'grayscale(100%) contrast(1.05)' }}/>
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.82) 0%, transparent 40%), linear-gradient(to right, rgba(0,0,0,0.80) 0%, transparent 38%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 25%), linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 38%)' }}/>
-          </div>
-        </div>
-
-        {/* Mobile hero image — single Unsplash photo, mobile only */}
-        <div className="hero-mobile" style={{
+        {/* Hero background photo */}
+        <div style={{
           position: 'absolute',
           inset: 0,
           zIndex: 2,
@@ -83,7 +64,7 @@ export default function HomePage() {
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600&q=80&auto=format&fit=crop"
             alt="K19 Hair Studio"
             style={{
               width: '100%',
@@ -96,7 +77,7 @@ export default function HomePage() {
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.7) 100%)',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.75) 100%)',
           }} />
         </div>
 

@@ -28,19 +28,9 @@ export default function HomePage() {
   const { t } = useLang()
   useFadeUp()
 
-  const [groupedServices, setGroupedServices] = useState<Record<string, any[]>>({})
-  const [categoryOrder, setCategoryOrder] = useState<string[]>([])
   const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
 
   useEffect(() => {
-    fetch('/api/services/grouped')
-      .then(res => res.json())
-      .then(data => {
-        setGroupedServices(data.grouped || {})
-        setCategoryOrder(data.categoryOrder || [])
-      })
-      .catch(err => console.error('Failed to fetch services:', err))
-
     fetch('/api/gallery')
       .then(res => res.json())
       .then(data => setGalleryPhotos(data.photos || []))
@@ -145,57 +135,113 @@ export default function HomePage() {
             <span className="gold-rule"/>
           </div>
 
-          <div className="fade-up" style={{ transitionDelay: '0.08s' }}>
-            {categoryOrder.filter(cat => groupedServices[cat]?.length > 0).map(cat => (
-              <div key={cat} style={{ marginBottom: '2.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: '1.25rem' }}>
-                  <h3 style={{
-                    fontFamily: "'Poppins',sans-serif",
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#C9A96E',
-                    margin: 0,
-                    flexShrink: 0,
-                  }}>
-                    {cat}
-                  </h3>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(28,28,28,0.1)' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {groupedServices[cat].map((service: any) => (
-                    <div key={service.id} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 0',
-                      borderBottom: '1px solid rgba(28,28,28,0.06)',
-                    }}>
-                      <p style={{
-                        fontFamily: "'Poppins',sans-serif",
-                        fontSize: '0.88rem',
-                        color: 'rgba(28,28,28,0.75)',
-                        margin: 0,
-                        fontWeight: 300,
-                      }}>
-                        {service.name_en}
-                      </p>
-                      <p style={{
-                        fontFamily: "'Poppins',sans-serif",
-                        fontSize: '0.75rem',
-                        color: 'rgba(28,28,28,0.35)',
-                        margin: 0,
-                        flexShrink: 0,
-                        marginLeft: 16,
-                      }}>
-                        {service.duration_minutes} min
-                      </p>
-                    </div>
-                  ))}
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+
+            {/* Card 1 — Haircut */}
+            <div className="service-card fade-up" style={{ transitionDelay: '0.08s' }}>
+              <div style={{
+                width: 40, height: 40, marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+                  <path d="M18 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+                  <path d="M8.5 8.5L18 21M15.5 8.5L6 21"/>
+                </svg>
               </div>
-            ))}
+              <h3 className="font-serif text-ink mb-3"
+                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
+                Cuts & Styling
+              </h3>
+              <p className="font-sans" style={{
+                fontSize: '0.88rem', lineHeight: 1.75,
+                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
+              }}>
+                Precision cuts for men, women and children. From classic to contemporary —
+                tailored to your face shape, lifestyle and personal aesthetic.
+              </p>
+            </div>
+
+            {/* Card 2 — Wash */}
+            <div className="service-card fade-up" style={{ transitionDelay: '0.12s' }}>
+              <div style={{
+                width: 40, height: 40, marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10"/>
+                  <path d="M12 6v6l4 2"/>
+                  <path d="M18 2l4 4-4 4"/>
+                </svg>
+              </div>
+              <h3 className="font-serif text-ink mb-3"
+                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
+                Wash & Care
+              </h3>
+              <p className="font-sans" style={{
+                fontSize: '0.88rem', lineHeight: 1.75,
+                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
+              }}>
+                Professional hair wash services for men and women.
+                A relaxing, thorough cleanse using premium products
+                suited to your hair type.
+              </p>
+            </div>
+
+            {/* Card 3 — Chemical */}
+            <div className="service-card fade-up" style={{ transitionDelay: '0.16s' }}>
+              <div style={{
+                width: 40, height: 40, marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 3h6l1 7H8L9 3z"/>
+                  <path d="M8 10c-2 2-3 4-3 7a7 7 0 0 0 14 0c0-3-1-5-3-7"/>
+                  <path d="M12 13v5"/>
+                </svg>
+              </div>
+              <h3 className="font-serif text-ink mb-3"
+                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
+                Colour & Chemical
+              </h3>
+              <p className="font-sans" style={{
+                fontSize: '0.88rem', lineHeight: 1.75,
+                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
+              }}>
+                Full colour, highlights, bleaching, perms and straightening.
+                Vibrant, healthy transformations that last —
+                for both men and women.
+              </p>
+            </div>
+
+            {/* Card 4 — Treatment */}
+            <div className="service-card fade-up" style={{ transitionDelay: '0.20s' }}>
+              <div style={{
+                width: 40, height: 40, marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h3 className="font-serif text-ink mb-3"
+                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
+                Treatments
+              </h3>
+              <p className="font-sans" style={{
+                fontSize: '0.88rem', lineHeight: 1.75,
+                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
+              }}>
+                Scalp and hair treatments, keratin smoothing.
+                Restore health, strength and lustre with
+                professional-grade care products.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>

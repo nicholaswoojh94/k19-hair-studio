@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLang } from '@/context/LanguageContext'
@@ -28,6 +28,25 @@ export default function HomePage() {
   const { t } = useLang()
   useFadeUp()
 
+  const [groupedServices, setGroupedServices] = useState<Record<string, any[]>>({})
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([])
+  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
+
+  useEffect(() => {
+    fetch('/api/services/grouped')
+      .then(res => res.json())
+      .then(data => {
+        setGroupedServices(data.grouped || {})
+        setCategoryOrder(data.categoryOrder || [])
+      })
+      .catch(err => console.error('Failed to fetch services:', err))
+
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => setGalleryPhotos(data.photos || []))
+      .catch(err => console.error('Failed to fetch gallery:', err))
+  }, [])
+
   /* Gallery caption hover */
   useEffect(() => {
     document.querySelectorAll('.gallery-item').forEach(item => {
@@ -36,7 +55,7 @@ export default function HomePage() {
       item.addEventListener('mouseenter', () => { cap.style.opacity = '1' })
       item.addEventListener('mouseleave', () => { cap.style.opacity = '0' })
     })
-  }, [])
+  }, [galleryPhotos])
 
   return (
     <>
@@ -126,51 +145,57 @@ export default function HomePage() {
             <span className="gold-rule"/>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Card 1 */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.08s' }}>
-              <div className="mb-5">
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                  <circle cx="10" cy="10" r="4" stroke="#C9A96E" strokeWidth="1.5"/>
-                  <circle cx="10" cy="26" r="4" stroke="#C9A96E" strokeWidth="1.5"/>
-                  <line x1="13.5" y1="12.5" x2="27" y2="25" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="13.5" y1="23.5" x2="27" y2="11" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+          <div className="fade-up" style={{ transitionDelay: '0.08s' }}>
+            {categoryOrder.filter(cat => groupedServices[cat]?.length > 0).map(cat => (
+              <div key={cat} style={{ marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: '1.25rem' }}>
+                  <h3 style={{
+                    fontFamily: "'Poppins',sans-serif",
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#C9A96E',
+                    margin: 0,
+                    flexShrink: 0,
+                  }}>
+                    {cat}
+                  </h3>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(28,28,28,0.1)' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {groupedServices[cat].map((service: any) => (
+                    <div key={service.id} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px 0',
+                      borderBottom: '1px solid rgba(28,28,28,0.06)',
+                    }}>
+                      <p style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: '0.88rem',
+                        color: 'rgba(28,28,28,0.75)',
+                        margin: 0,
+                        fontWeight: 300,
+                      }}>
+                        {service.name_en}
+                      </p>
+                      <p style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: '0.75rem',
+                        color: 'rgba(28,28,28,0.35)',
+                        margin: 0,
+                        flexShrink: 0,
+                        marginLeft: 16,
+                      }}>
+                        {service.duration_minutes} min
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="font-serif text-ink mb-1" style={{ fontSize: '1.25rem', letterSpacing: '-0.02em' }}>{t('s1Title')}</h3>
-              <span style={{ display: 'block', width: 32, height: 1.5, background: '#C9A96E', marginBottom: '0.85rem', borderRadius: 2 }}/>
-              <p className="font-sans" style={{ fontSize: '0.875rem', lineHeight: 1.7, fontWeight: 300, color: 'rgba(28,28,28,0.6)' }}>{t('s1Desc')}</p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.16s' }}>
-              <div className="mb-5">
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                  <path d="M18 4 L22 16 Q24 20 22 24 Q20 29 18 30 Q16 29 14 24 Q12 20 14 16 Z" stroke="#C9A96E" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
-                  <path d="M12 8 Q6 14 8 22 Q10 28 18 30" stroke="#C9A96E" strokeWidth="1" fill="none" strokeDasharray="2,2"/>
-                  <circle cx="18" cy="14" r="1.5" fill="#C9A96E" opacity="0.6"/>
-                </svg>
-              </div>
-              <h3 className="font-serif text-ink mb-1" style={{ fontSize: '1.25rem', letterSpacing: '-0.02em' }}>{t('s2Title')}</h3>
-              <span style={{ display: 'block', width: 32, height: 1.5, background: '#C9A96E', marginBottom: '0.85rem', borderRadius: 2 }}/>
-              <p className="font-sans" style={{ fontSize: '0.875rem', lineHeight: 1.7, fontWeight: 300, color: 'rgba(28,28,28,0.6)' }}>{t('s2Desc')}</p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.24s' }}>
-              <div className="mb-5">
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                  <path d="M18 6 Q24 10 26 18 Q28 26 18 30 Q8 26 10 18 Q12 10 18 6Z" stroke="#C9A96E" strokeWidth="1.5" fill="none"/>
-                  <path d="M18 10 Q22 13 22 18 Q22 23 18 26 Q14 23 14 18 Q14 13 18 10Z" stroke="#C9A96E" strokeWidth="1" fill="rgba(201,169,110,0.08)"/>
-                  <line x1="18" y1="6" x2="18" y2="2" stroke="#C9A96E" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="23" y1="7.5" x2="25" y2="4" stroke="#C9A96E" strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
-                  <line x1="13" y1="7.5" x2="11" y2="4" stroke="#C9A96E" strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
-                </svg>
-              </div>
-              <h3 className="font-serif text-ink mb-1" style={{ fontSize: '1.25rem', letterSpacing: '-0.02em' }}>{t('s3Title')}</h3>
-              <span style={{ display: 'block', width: 32, height: 1.5, background: '#C9A96E', marginBottom: '0.85rem', borderRadius: 2 }}/>
-              <p className="font-sans" style={{ fontSize: '0.875rem', lineHeight: 1.7, fontWeight: 300, color: 'rgba(28,28,28,0.6)' }}>{t('s3Desc')}</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -217,25 +242,56 @@ export default function HomePage() {
             <span className="gold-rule"/>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { h: 320, src: 'https://placehold.co/480x640/2a1f14/c9a96e?text=Style',     label: 'Cuts & Style',   delay: '0.04s' },
-              { h: 240, src: 'https://placehold.co/480x480/1a1208/c9a96e?text=Colour',    label: 'Colour',         delay: '0.10s' },
-              { h: 320, src: 'https://placehold.co/480x640/231a10/c9a96e?text=Balayage',  label: 'Balayage',       delay: '0.16s' },
-              { h: 260, src: 'https://placehold.co/480x520/1c1812/d4a5a0?text=Highlights',label: 'Highlights',     delay: '0.22s' },
-              { h: 300, src: 'https://placehold.co/480x600/241b0e/c9a96e?text=Treatment', label: 'Treatment',      delay: '0.28s' },
-              { h: 260, src: 'https://placehold.co/480x520/1e1610/c9a96e?text=Finish',    label: 'Finish',         delay: '0.34s' },
-            ].map(({ h, src, label, delay }) => (
-              <div key={label} className="gallery-item fade-up" style={{ height: h, transitionDelay: delay }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={label} loading="lazy"/>
-                <div className="overlay"/>
-                <div className="caption absolute bottom-0 left-0 right-0 p-4 z-10" style={{ opacity: 0, transition: 'opacity 0.35s ease' }}>
-                  <p className="font-sans text-off-white text-xs tracking-widest uppercase">{label}</p>
+          {galleryPhotos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'rgba(28,28,28,0.25)' }}>
+              <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.85rem', fontStyle: 'italic', margin: 0 }}>
+                Gallery coming soon.
+              </p>
+            </div>
+          ) : (
+            <div style={{ columns: '3 280px', columnGap: '16px', padding: '0 16px' }}>
+              {galleryPhotos.map((photo: any, i: number) => (
+                <div
+                  key={photo.id}
+                  style={{
+                    breakInside: 'avoid',
+                    marginBottom: '16px',
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                  className="gallery-item"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.url}
+                    alt={photo.caption || `K19 Hair Studio work ${i + 1}`}
+                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+                    loading="lazy"
+                  />
+                  {photo.caption && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      padding: '12px',
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                    }}>
+                      <p style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: '0.75rem',
+                        color: 'rgba(250,250,248,0.8)',
+                        margin: 0,
+                      }}>
+                        {photo.caption}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendOtp } from '@/lib/whatsapp/sendOtp'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,47 +29,49 @@ export async function POST(req: NextRequest) {
 
     const isTestMode = testModeSetting?.value === 'true'
 
-    // Generate OTP
-    const otp = isTestMode
-      ? '123456'
-      : Math.floor(100000 + Math.random() * 900000).toString()
+    // CASE 1 — test mode: dummy code, no real message, return OTP in response
+    if (isTestMode) {
+      const otp = '123456'
 
-    // Delete any existing unused OTPs for this phone
-    await supabaseAdmin
-      .from('otp_codes')
-      .delete()
-      .eq('phone', phone)
-      .eq('used', false)
+      await supabaseAdmin.from('otp_codes').delete().eq('phone', phone).eq('used', false)
 
-    // Store OTP in database
-    const { error } = await supabaseAdmin
-      .from('otp_codes')
-      .insert({
+      const { error } = await supabaseAdmin.from('otp_codes').insert({
         phone,
         code: otp,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       })
 
+      if (error) {
+        console.error('OTP insert error:', error)
+        return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, testMode: true, otp })
+    }
+
+    // CASE 2 & 3 — real OTP; sendOtp decides whether to actually call Meta
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+    await supabaseAdmin.from('otp_codes').delete().eq('phone', phone).eq('used', false)
+
+    const { error } = await supabaseAdmin.from('otp_codes').insert({
+      phone,
+      code: otp,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    })
+
     if (error) {
       console.error('OTP insert error:', error)
-      return NextResponse.json(
-        { error: 'Failed to generate OTP' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
     }
 
-    // In test mode, return OTP in response for development
-    // In production, send via WhatsApp and never return OTP
-    if (isTestMode) {
-      return NextResponse.json({
-        success: true,
-        testMode: true,
-        otp // Remove this in production!
-      })
-    }
+    const result = await sendOtp(phone, otp)
 
-    // TODO: Send OTP via WhatsApp Cloud API
-    // Will be wired up when WhatsApp API is configured
+    if (!result.success) {
+      console.error('[OTP route] sendOtp failed:', result.error)
+      // OTP is stored — user can retry; don't block the flow with a 500
+      return NextResponse.json({ success: true, testMode: false, sendError: result.error })
+    }
 
     return NextResponse.json({ success: true, testMode: false })
 

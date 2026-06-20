@@ -221,6 +221,8 @@ export default function AdminSettings() {
         {/* OTP / Test mode */}
         <div style={sectionStyle}>
           <p style={sectionLabelStyle}>OTP & Notifications</p>
+
+          {/* Toggle 1 — Test mode */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
             <div>
               <p style={{ fontSize: '0.88rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 4px' }}>WhatsApp OTP Test Mode</p>
@@ -249,7 +251,41 @@ export default function AdminSettings() {
               </span>
             </label>
           </div>
-          <SaveButton keys={['whatsapp_otp_test_mode']} />
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', margin: '0 0 20px' }} />
+
+          {/* Toggle 2 — Live sending */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+            <div>
+              <p style={{ fontSize: '0.88rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 4px' }}>WhatsApp Live Sending</p>
+              <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>
+                When enabled, real OTP messages are sent via Meta&apos;s WhatsApp Cloud API.
+                Has no effect while Test Mode is ON.
+              </p>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, marginLeft: 24 }}>
+              <div
+                onClick={() => updateSetting('whatsapp_sending_enabled', settings.whatsapp_sending_enabled === 'true' ? 'false' : 'true')}
+                style={{
+                  width: 44, height: 24, borderRadius: 12,
+                  background: settings.whatsapp_sending_enabled === 'true' ? '#C9A96E' : 'rgba(0,0,0,0.15)',
+                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s ease',
+                }}>
+                <div style={{
+                  width: 18, height: 18, borderRadius: '50%', background: '#FFFFFF',
+                  position: 'absolute', top: 3, transition: 'left 0.2s ease',
+                  left: settings.whatsapp_sending_enabled === 'true' ? 23 : 3,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </div>
+              <span style={{ fontSize: '0.82rem', color: '#1C1C1C', fontWeight: settings.whatsapp_sending_enabled === 'true' ? 600 : 400 }}>
+                {settings.whatsapp_sending_enabled === 'true' ? 'ON' : 'OFF'}
+              </span>
+            </label>
+          </div>
+
+          <SaveButton keys={['whatsapp_otp_test_mode', 'whatsapp_sending_enabled']} />
         </div>
 
         {/* Change password */}

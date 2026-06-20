@@ -32,15 +32,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     }
 
-    // Get buffer minutes
-    const { data: bufferSetting } = await supabaseAdmin
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'buffer_minutes')
-      .single()
+    // Get business hours for this specific day of week
+    const dayOfWeek = new Date(date + 'T00:00:00').getDay()
 
-    const bufferMinutes = parseInt(bufferSetting?.value || '15')
+    const [bufferRes, hoursRes] = await Promise.all([
+      supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
+      supabaseAdmin.from('business_hours').select('opening_time, closing_time, is_closed').eq('day_of_week', dayOfWeek).single(),
+    ])
+
+    const bufferMinutes = parseInt(bufferRes.data?.value || '15')
     const totalDuration = service.duration_minutes + bufferMinutes
+
+    // If studio is closed this day, return empty immediately
+    if (!hoursRes.data || hoursRes.data.is_closed) {
+      return NextResponse.json({ availableSlots: [] })
+    }
+
+    const [openH, openM] = hoursRes.data.opening_time.split(':').map(Number)
+    const [closeH, closeM] = hoursRes.data.closing_time.split(':').map(Number)
+    const openingMinutes = openH * 60 + openM
+    const closingMinutes = closeH * 60 + closeM
 
     // Get existing confirmed bookings for this date
     const { data: existingBookings } = await supabaseAdmin
@@ -55,11 +66,13 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('block_date', date)
 
-    // All possible slots 11am - 7pm
-    const allSlots = [
-      '11:00', '12:00', '13:00', '14:00',
-      '15:00', '16:00', '17:00', '18:00', '19:00'
-    ]
+    // Generate hourly slots from opening to closing time
+    const allSlots: string[] = []
+    for (let m = openingMinutes; m < closingMinutes; m += 60) {
+      const h = Math.floor(m / 60)
+      const min = m % 60
+      allSlots.push(`${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`)
+    }
 
     // Filter out unavailable slots
     const availableSlots = allSlots.filter(slot => {
@@ -67,8 +80,8 @@ export async function GET(req: NextRequest) {
       const slotStart = hours * 60 + minutes
       const slotEnd = slotStart + totalDuration
 
-      // Check if slot ends before 8pm (1200 minutes)
-      if (slotEnd > 20 * 60) return false
+      // Slot must finish by closing time
+      if (slotEnd > closingMinutes) return false
 
       // Check against blocked slots
       const isBlockedBySlot = (blockedSlots || []).some(b => {

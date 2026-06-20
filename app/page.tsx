@@ -17,6 +17,16 @@ function useFadeUp() {
   }, [])
 }
 
+/* ── Format "HH:MM:SS" → "11am" / "10:30am" / "8pm" ── */
+function fmtTime(t: string): string {
+  const [hStr, mStr] = t.split(':')
+  const h = parseInt(hStr, 10)
+  const m = parseInt(mStr, 10)
+  const period = h >= 12 ? 'pm' : 'am'
+  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h
+  return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, '0')}${period}`
+}
+
 /* ── Star SVG ── */
 const Star = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="#C9A96E" xmlns="http://www.w3.org/2000/svg">
@@ -29,12 +39,20 @@ export default function HomePage() {
   useFadeUp()
 
   const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
+  const [footerHours, setFooterHours] = useState<any[]>([])
 
   useEffect(() => {
     fetch('/api/gallery')
       .then(res => res.json())
       .then(data => setGalleryPhotos(data.photos || []))
       .catch(err => console.error('Failed to fetch gallery:', err))
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/business-hours')
+      .then(res => res.json())
+      .then(data => { if (data.hours) setFooterHours(data.hours) })
+      .catch(() => {})
   }, [])
 
   /* Gallery caption hover */
@@ -458,43 +476,43 @@ export default function HomePage() {
               }}>
                 Business Hours
               </p>
-              {[
-                { day: 'Sunday', hours: '10:30am – 7pm' },
-                { day: 'Monday', hours: '11am – 8pm' },
-                { day: 'Tuesday', hours: 'Closed', closed: true },
-                { day: 'Wednesday', hours: '11am – 8pm' },
-                { day: 'Thursday', hours: '11am – 8pm' },
-                { day: 'Friday', hours: '11am – 8pm' },
-                { day: 'Saturday', hours: '10:30am – 8pm' },
-              ].map(({ day, hours, closed }) => {
-                const isToday = new Date().toLocaleDateString('en-US', { weekday: 'long' }) === day
-                return (
-                  <div key={day} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 0',
-                    borderBottom: '1px solid rgba(201,169,110,0.06)',
-                  }}>
-                    <span style={{
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: '0.82rem',
-                      fontWeight: isToday ? 500 : 300,
-                      color: isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
-                    }}>
-                      {isToday ? '✦ Today' : day}
-                    </span>
-                    <span style={{
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: '0.82rem',
-                      fontWeight: isToday ? 500 : 300,
-                      color: closed ? 'rgba(250,250,248,0.2)' : isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
-                    }}>
-                      {hours}
-                    </span>
-                  </div>
-                )
-              })}
+              {footerHours.length > 0
+                ? footerHours.map((row: any) => {
+                    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+                    const day = DAY_NAMES[row.day_of_week]
+                    const isToday = new Date().getDay() === row.day_of_week
+                    const hoursLabel = row.is_closed
+                      ? 'Closed'
+                      : `${fmtTime(row.opening_time)} – ${fmtTime(row.closing_time)}`
+                    return (
+                      <div key={row.day_of_week} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        borderBottom: '1px solid rgba(201,169,110,0.06)',
+                      }}>
+                        <span style={{
+                          fontFamily: "'Poppins', sans-serif",
+                          fontSize: '0.82rem',
+                          fontWeight: isToday ? 500 : 300,
+                          color: isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
+                        }}>
+                          {isToday ? '✦ Today' : day}
+                        </span>
+                        <span style={{
+                          fontFamily: "'Poppins', sans-serif",
+                          fontSize: '0.82rem',
+                          fontWeight: isToday ? 500 : 300,
+                          color: row.is_closed ? 'rgba(250,250,248,0.2)' : isToday ? '#C9A96E' : 'rgba(250,250,248,0.5)',
+                        }}>
+                          {hoursLabel}
+                        </span>
+                      </div>
+                    )
+                  })
+                : null
+              }
             </div>
 
             {/* COLUMN 3 — Find Us */}

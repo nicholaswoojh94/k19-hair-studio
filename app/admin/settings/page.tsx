@@ -28,6 +28,16 @@ const sectionLabelStyle: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 20px',
 }
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const UI_ORDER = [1, 2, 3, 4, 5, 6, 0] // Mon–Sun display order
+
+type BusinessHourRow = {
+  day_of_week: number
+  opening_time: string
+  closing_time: string
+  is_closed: boolean
+}
+
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -36,12 +46,18 @@ export default function AdminSettings() {
   const [toastMsg, setToastMsg] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
+  const [businessHours, setBusinessHours] = useState<BusinessHourRow[]>([])
+  const [savingHours, setSavingHours] = useState(false)
+
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [changingPw, setChangingPw] = useState(false)
 
-  useEffect(() => { fetchSettings() }, [])
+  useEffect(() => {
+    fetchSettings()
+    fetchBusinessHours()
+  }, [])
 
   async function fetchSettings() {
     setLoading(true)
@@ -51,6 +67,55 @@ export default function AdminSettings() {
       setSettings(data.settings || {})
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchBusinessHours() {
+    try {
+      const res = await fetch('/api/admin/business-hours')
+      const data = await res.json()
+      if (data.hours && data.hours.length === 7) {
+        setBusinessHours(data.hours)
+      } else {
+        // Default seed if table not yet created
+        setBusinessHours(UI_ORDER.map(d => ({
+          day_of_week: d,
+          opening_time: '11:00',
+          closing_time: '20:00',
+          is_closed: false,
+        })))
+      }
+    } catch {
+      // silently fail — table may not exist yet
+    }
+  }
+
+  function updateHour(dayOfWeek: number, field: keyof BusinessHourRow, value: string | boolean) {
+    setBusinessHours(prev => prev.map(row =>
+      row.day_of_week === dayOfWeek ? { ...row, [field]: value } : row
+    ))
+  }
+
+  async function saveBusinessHours() {
+    setSavingHours(true)
+    try {
+      const res = await fetch('/api/admin/business-hours', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hours: businessHours }),
+      })
+      if (res.ok) {
+        setToastMsg('Business hours saved.')
+        setToastType('success')
+        setShowToast(true)
+      } else {
+        const data = await res.json()
+        setToastMsg(data.error || 'Failed to save hours.')
+        setToastType('error')
+        setShowToast(true)
+      }
+    } finally {
+      setSavingHours(false)
     }
   }
 
@@ -168,24 +233,97 @@ export default function AdminSettings() {
                 How far in advance customers can make a booking.
               </p>
             </div>
-            <div>
-              <label style={labelStyle}>Opening Time</label>
-              <input type="time" value={settings.booking_start_time || '11:00'}
-                onChange={e => updateSetting('booking_start_time', e.target.value)}
-                style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
-            </div>
-            <div>
-              <label style={labelStyle}>Closing Time</label>
-              <input type="time" value={settings.booking_end_time || '20:00'}
-                onChange={e => updateSetting('booking_end_time', e.target.value)}
-                style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light', backgroundColor: '#FAFAFA' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
-            </div>
           </div>
-          <SaveButton keys={['buffer_minutes', 'booking_days_ahead', 'booking_start_time', 'booking_end_time']} />
+          <SaveButton keys={['buffer_minutes', 'booking_days_ahead']} />
+        </div>
+
+        {/* Business hours */}
+        <div style={sectionStyle}>
+          <p style={sectionLabelStyle}>Business Hours</p>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 20px' }}>
+            Set opening and closing times per day. Toggle "Closed" to block all slots for that day.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+            {/* Header row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Day</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Opens</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Closes</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Closed</span>
+            </div>
+
+            {UI_ORDER.map(dayIndex => {
+              const row = businessHours.find(r => r.day_of_week === dayIndex)
+              if (!row) return null
+              return (
+                <div key={dayIndex} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: row.is_closed ? 400 : 500, color: row.is_closed ? 'rgba(0,0,0,0.3)' : '#1C1C1C' }}>
+                    {DAY_NAMES[dayIndex]}
+                  </span>
+                  <input
+                    type="time"
+                    value={row.opening_time.slice(0, 5)}
+                    onChange={e => updateHour(dayIndex, 'opening_time', e.target.value)}
+                    disabled={row.is_closed}
+                    style={{
+                      ...inputStyle,
+                      color: '#1C1C1C',
+                      colorScheme: 'light',
+                      backgroundColor: row.is_closed ? '#F0F0EE' : '#FAFAFA',
+                      opacity: row.is_closed ? 0.4 : 1,
+                      cursor: row.is_closed ? 'not-allowed' : 'auto',
+                      padding: '8px 10px',
+                    }}
+                    onFocus={e => { if (!row.is_closed) e.currentTarget.style.borderColor = '#C9A96E' }}
+                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+                  />
+                  <input
+                    type="time"
+                    value={row.closing_time.slice(0, 5)}
+                    onChange={e => updateHour(dayIndex, 'closing_time', e.target.value)}
+                    disabled={row.is_closed}
+                    style={{
+                      ...inputStyle,
+                      color: '#1C1C1C',
+                      colorScheme: 'light',
+                      backgroundColor: row.is_closed ? '#F0F0EE' : '#FAFAFA',
+                      opacity: row.is_closed ? 0.4 : 1,
+                      cursor: row.is_closed ? 'not-allowed' : 'auto',
+                      padding: '8px 10px',
+                    }}
+                    onFocus={e => { if (!row.is_closed) e.currentTarget.style.borderColor = '#C9A96E' }}
+                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+                  />
+                  <div
+                    onClick={() => updateHour(dayIndex, 'is_closed', !row.is_closed)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12,
+                      background: row.is_closed ? '#E57373' : 'rgba(0,0,0,0.12)',
+                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s ease',
+                      flexShrink: 0,
+                    }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%', background: '#FFFFFF',
+                      position: 'absolute', top: 3, transition: 'left 0.2s ease',
+                      left: row.is_closed ? 23 : 3,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <button type="button" onClick={saveBusinessHours} disabled={savingHours}
+            style={{
+              padding: '9px 20px', background: '#C9A96E', border: 'none',
+              borderRadius: 6, color: '#1C1C1C', fontSize: '0.78rem', fontWeight: 600,
+              cursor: savingHours ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif",
+              display: 'flex', alignItems: 'center', gap: 8, opacity: savingHours ? 0.7 : 1,
+            }}>
+            {savingHours ? <><Spinner size={12} color="#1C1C1C" /> Saving...</> : 'Save Hours'}
+          </button>
         </div>
 
         {/* Loyalty settings */}

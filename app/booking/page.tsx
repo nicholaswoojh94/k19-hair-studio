@@ -17,7 +17,6 @@ interface BookingState {
   email: string
 }
 
-const TIME_SLOTS = ['11:00 am','12:00 pm','1:00 pm','2:00 pm','3:00 pm','4:00 pm','5:00 pm','6:00 pm','7:00 pm']
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_HEADERS = ['S','M','T','W','T','F','S']
 
@@ -29,7 +28,17 @@ function formatTime(time24: string): string {
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
-function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d: Date) => void }) {
+const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+function Calendar({
+  selected,
+  onSelect,
+  closedDays,
+}: {
+  selected: Date | null
+  onSelect: (d: Date) => void
+  closedDays: Set<number>
+}) {
   const today = new Date(); today.setHours(0,0,0,0)
   const [yr, setYr] = useState(today.getFullYear())
   const [mo, setMo] = useState(today.getMonth())
@@ -41,6 +50,8 @@ function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d:
   function nextMonth() { if (mo === 11) { setMo(0); setYr(y => y + 1) } else setMo(m => m + 1) }
 
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({length: daysInMonth}, (_,i) => i+1)]
+
+  const closedDayNames = Array.from(closedDays).sort().map(d => DOW_NAMES[d])
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(201,169,110,0.12)', borderRadius: 6, padding: '1rem' }}>
@@ -55,11 +66,12 @@ function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d:
           onMouseOver={e => (e.currentTarget.style.color = '#C9A96E')} onMouseOut={e => (e.currentTarget.style.color = 'rgba(250,250,248,0.4)')}>›</button>
       </div>
 
-      {/* Day headers */}
+      {/* Day headers — closed days are dimmed and italicised */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
         {DAY_HEADERS.map((d, i) => (
           <div key={i} style={{ textAlign: 'center', fontSize: '0.62rem', padding: '4px 0', fontFamily: "'Poppins',sans-serif",
-            color: i === 2 ? 'rgba(201,169,110,0.35)' : 'rgba(250,250,248,0.25)', fontStyle: i === 2 ? 'italic' : 'normal' }}>{d}</div>
+            color: closedDays.has(i) ? 'rgba(201,169,110,0.35)' : 'rgba(250,250,248,0.25)',
+            fontStyle: closedDays.has(i) ? 'italic' : 'normal' }}>{d}</div>
         ))}
       </div>
 
@@ -68,9 +80,9 @@ function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d:
         {cells.map((day, i) => {
           if (!day) return <div key={i}/>
           const date = new Date(yr, mo, day)
-          const isTuesday = date.getDay() === 2
+          const isClosedDay = closedDays.has(date.getDay())
           const isPast = date < today
-          const isDisabled = isTuesday || isPast
+          const isDisabled = isClosedDay || isPast
           const isSelected = selected?.getTime() === date.getTime()
           const isToday = date.getTime() === today.getTime()
 
@@ -96,9 +108,11 @@ function Calendar({ selected, onSelect }: { selected: Date | null; onSelect: (d:
           )
         })}
       </div>
-      <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.68rem', color: 'rgba(201,169,110,0.4)', textAlign: 'center', marginTop: '0.6rem', fontStyle: 'italic' }}>
-        Tuesday: Closed
-      </p>
+      {closedDayNames.length > 0 && (
+        <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.68rem', color: 'rgba(201,169,110,0.4)', textAlign: 'center', marginTop: '0.6rem', fontStyle: 'italic' }}>
+          Closed: {closedDayNames.join(', ')}
+        </p>
+      )}
     </div>
   )
 }
@@ -153,6 +167,7 @@ export default function BookingPage() {
   const [bookingError, setBookingError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['Haircut'])
+  const [closedDays, setClosedDays] = useState<Set<number>>(new Set())
 
   function toggleCategory(cat: string) {
     setExpandedCategories(prev =>
@@ -188,7 +203,24 @@ export default function BookingPage() {
       const data = await res.json()
       if (data.services) setServices(data.services)
     }
+    async function fetchBusinessHours() {
+      try {
+        const res = await fetch('/api/business-hours')
+        const data = await res.json()
+        if (data.hours) {
+          const closed = new Set<number>(
+            data.hours
+              .filter((h: { day_of_week: number; is_closed: boolean }) => h.is_closed)
+              .map((h: { day_of_week: number }) => h.day_of_week)
+          )
+          setClosedDays(closed)
+        }
+      } catch {
+        // fail silently — no days blocked
+      }
+    }
     fetchServices()
+    fetchBusinessHours()
   }, [])
 
   async function fetchAvailability(date: Date, serviceId: string) {
@@ -532,7 +564,7 @@ export default function BookingPage() {
                 Select an available date, then a time slot.
               </p>
 
-              <Calendar selected={booking.date} onSelect={d => {
+              <Calendar selected={booking.date} closedDays={closedDays} onSelect={d => {
                 setBooking(b => ({ ...b, date: d, time: '' }))
                 fetchAvailability(d, booking.service)
               }}/>

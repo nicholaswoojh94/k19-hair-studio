@@ -15,7 +15,7 @@ export async function GET(
   try {
     const { id } = params
 
-    const [userRes, bookingsRes, loyaltyRes] = await Promise.all([
+    const [userRes, bookingsRes, loyaltyRes, vouchersRes] = await Promise.all([
       supabaseAdmin.from('users').select('*').eq('id', id).single(),
       supabaseAdmin
         .from('bookings')
@@ -25,6 +25,11 @@ export async function GET(
       supabaseAdmin
         .from('loyalty_points')
         .select('*')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false }),
+      supabaseAdmin
+        .from('vouchers')
+        .select('*, services(name_en)')
         .eq('user_id', id)
         .order('created_at', { ascending: false }),
     ])
@@ -37,6 +42,7 @@ export async function GET(
       bookings: bookingsRes.data || [],
       loyaltyPoints: loyaltyRes.data || [],
       loyaltyBalance: balance,
+      vouchers: vouchersRes.data || [],
     })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

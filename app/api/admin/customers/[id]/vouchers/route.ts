@@ -14,7 +14,7 @@ export async function POST(
   )
   try {
     const { id } = params
-    const { type, value, expiresAt } = await req.json()
+    const { type, value, expiresAt, serviceId } = await req.json()
 
     const code = `K19-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
@@ -24,8 +24,9 @@ export async function POST(
         user_id: id,
         code,
         type,
-        value,
+        value: type === 'free_service' ? 0 : value,
         expires_at: expiresAt || null,
+        service_id: type === 'free_service' ? (serviceId || null) : null,
       })
       .select()
       .single()

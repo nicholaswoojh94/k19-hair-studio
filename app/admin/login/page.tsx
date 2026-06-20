@@ -118,6 +118,7 @@ export default function AdminLoginPage() {
               boxSizing: 'border-box',
               transition: 'border-color 0.2s ease',
               background: '#FAFAFA',
+              color: '#1C1C1C',
             }}
             onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
             onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
@@ -154,6 +155,7 @@ export default function AdminLoginPage() {
               boxSizing: 'border-box',
               transition: 'border-color 0.2s ease',
               background: '#FAFAFA',
+              color: '#1C1C1C',
             }}
             onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
             onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}

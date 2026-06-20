@@ -241,7 +241,7 @@ export default function AdminSettings() {
         <div style={sectionStyle}>
           <p style={sectionLabelStyle}>Business Hours</p>
           <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 20px' }}>
-            Set opening and closing times per day. Toggle "Closed" to block all slots for that day.
+            Set opening and closing times per day. Toggle &quot;Closed&quot; to block all slots for that day.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>

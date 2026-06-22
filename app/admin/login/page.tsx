@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -9,6 +10,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleLogin() {
     if (!email || !password) return
@@ -63,7 +65,7 @@ export default function AdminLoginPage() {
           <img
             src="/brand_assets/K19_logo_black_transparent.png"
             alt="K19 Hair Studio"
-            style={{ width: 160, height: 'auto' }}
+            style={{ width: 160, height: 'auto', display: 'block', margin: '0 auto' }}
           />
         </div>
 
@@ -137,29 +139,43 @@ export default function AdminLoginPage() {
           }}>
             Password
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            autoComplete="current-password"
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              border: '1.5px solid rgba(0,0,0,0.12)',
-              borderRadius: 6,
-              fontSize: '0.9rem',
-              fontFamily: "'Poppins',sans-serif",
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.2s ease',
-              background: '#FAFAFA',
-              color: '#1C1C1C',
-            }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              autoComplete="current-password"
+              style={{
+                width: '100%',
+                padding: '10px 42px 10px 14px',
+                border: '1.5px solid rgba(0,0,0,0.12)',
+                borderRadius: 6,
+                fontSize: '0.9rem',
+                fontFamily: "'Poppins',sans-serif",
+                outline: 'none',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s ease',
+                background: '#FAFAFA',
+                color: '#1C1C1C',
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              tabIndex={-1}
+              style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                color: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center',
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
 
         {error && (

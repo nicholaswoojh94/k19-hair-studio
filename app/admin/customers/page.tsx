@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
+import { MenuButton } from '@/app/admin/menu-button'
 
 type Customer = {
   id: string
@@ -70,6 +71,7 @@ export default function AdminCustomers() {
   const [services, setServices] = useState<{ id: string; name_en: string; is_active: boolean }[]>([])
 
   const [activeTab, setActiveTab] = useState<'bookings' | 'details' | 'loyalty' | 'vouchers'>('bookings')
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/services')
@@ -183,11 +185,27 @@ export default function AdminCustomers() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: "'Poppins',sans-serif", overflow: 'hidden' }}>
+      <style>{`
+        @media (max-width: 1023px) {
+          .customers-list-pane { width: 100% !important; }
+          .customers-list-pane.mob-hidden { display: none !important; }
+          .customers-detail-pane { padding: 20px 16px !important; }
+          .customers-detail-pane.mob-hidden { display: none !important; }
+          .customers-mob-back { display: flex !important; }
+          /* Voucher form: stack on phone */
+          .voucher-grid { grid-template-columns: 1fr !important; }
+          /* Customer details 2-col grid: stack on phone */
+          .customers-2col { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       {/* Customer list */}
-      <div style={{ width: 340, flexShrink: 0, borderRight: '1px solid rgba(0,0,0,0.06)', background: '#FFFFFF', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div className={`customers-list-pane${mobileDetailOpen ? ' mob-hidden' : ''}`} style={{ width: 340, flexShrink: 0, borderRight: '1px solid rgba(0,0,0,0.06)', background: '#FFFFFF', display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <div style={{ padding: '28px 24px 16px' }}>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 4px' }}>Customers</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <MenuButton />
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>Customers</h1>
+          </div>
           <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.35)', margin: '0 0 16px' }}>
             {customers.length} total
           </p>
@@ -214,7 +232,7 @@ export default function AdminCustomers() {
           ) : customers.map(c => (
             <div
               key={c.id}
-              onClick={() => fetchDetail(c.id)}
+              onClick={() => { fetchDetail(c.id); setMobileDetailOpen(true) }}
               style={{
                 padding: '14px 24px', borderBottom: '1px solid rgba(0,0,0,0.04)',
                 cursor: 'pointer',
@@ -244,7 +262,22 @@ export default function AdminCustomers() {
       </div>
 
       {/* Customer detail */}
-      <div style={{ flex: 1, overflowY: 'auto', background: '#F4F4F2', padding: '32px 40px' }}>
+      <div className={`customers-detail-pane${!mobileDetailOpen ? ' mob-hidden' : ''}`} style={{ flex: 1, overflowY: 'auto', background: '#F4F4F2', padding: '32px 40px' }}>
+        {/* Back button — visible only on mobile when detail is open */}
+        <button
+          className="customers-mob-back"
+          type="button"
+          onClick={() => setMobileDetailOpen(false)}
+          style={{
+            display: 'none', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none',
+            color: '#C9A96E', fontFamily: "'Poppins', sans-serif",
+            fontSize: '0.82rem', fontWeight: 600,
+            cursor: 'pointer', padding: '0 0 16px 0',
+          }}
+        >
+          ← Customers
+        </button>
         {!selectedId ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: '2.5rem', margin: '0 0 12px' }}>👤</p>
@@ -334,7 +367,7 @@ export default function AdminCustomers() {
             {activeTab === 'details' && (
               <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                 <p style={sectionLabel}>Customer Details</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div className="customers-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <div>
                     <label style={labelStyle}>Full Name</label>
                     <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle}
@@ -348,7 +381,7 @@ export default function AdminCustomers() {
                       onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                <div className="customers-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
                   <div>
                     <label style={labelStyle}>Phone</label>
                     <input type="text" value={detail.customer.phone} disabled
@@ -451,7 +484,7 @@ export default function AdminCustomers() {
                 {/* Issue voucher form */}
                 <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, padding: '24px', marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                   <p style={sectionLabel}>Issue Voucher</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="voucher-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
                     <div>
                       <label style={labelStyle}>Type</label>
                       <select value={voucherType} onChange={e => {

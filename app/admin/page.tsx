@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
+import { MenuButton } from '@/app/admin/menu-button'
 
 type Booking = {
   id: string
@@ -330,17 +331,38 @@ export default function AdminDashboard() {
   const cancelledCount = allBookings.filter(b => b.status === 'cancelled').length
 
   return (
-    <div style={{ padding: '32px 40px', fontFamily: "'Poppins', sans-serif", minHeight: '100vh', background: '#F4F4F2' }}>
+    <div className="cal-page" style={{ padding: '32px 40px', fontFamily: "'Poppins', sans-serif", minHeight: '100vh', background: '#F4F4F2' }}>
+      <style>{`
+        @media (max-width: 1023px) {
+          .cal-page { padding: 20px 16px !important; }
+          .cal-view-toggle { display: none !important; }
+          .cal-view-compact { display: flex !important; }
+          .cal-header-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .cal-time-col { width: 52px !important; padding: 18px 6px 0 0 !important; font-size: 0.65rem !important; }
+          .cal-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .cal-week-inner { min-width: 560px; }
+          .cal-month-inner { min-width: 420px; }
+          /* Bookings header wraps on phone */
+          .cal-header-row { flex-wrap: wrap; row-gap: 12px; }
+          /* Stats: 2-column on phone */
+          .cal-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          /* Toolbar compact on mobile */
+          .cal-toolbar { padding: 10px 14px !important; }
+        }
+      `}</style>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>Bookings</h1>
-          <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: '4px 0 0' }}>
-            {today.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
+      <div className="cal-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MenuButton />
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>Bookings</h1>
+            <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: '4px 0 0' }}>
+              {today.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="cal-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
           <button type="button"
             onClick={() => { setShowBlockModal(true); setBlockModalTab('block') }}
             style={{
@@ -376,7 +398,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div className="cal-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
         {[
           { label: 'Today', value: todayBookings.length, sub: 'appointments' },
           { label: 'Confirmed', value: confirmedCount, sub: 'upcoming' },
@@ -406,11 +428,11 @@ export default function AdminDashboard() {
         boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
       }}>
         {/* Toolbar */}
-        <div style={{
+        <div className="cal-toolbar" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 24px', borderBottom: '1px solid rgba(0,0,0,0.06)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <button type="button" onClick={() => setCurrentDate(new Date())}
               style={{
                 padding: '6px 14px', borderRadius: 6,
@@ -435,12 +457,13 @@ export default function AdminDashboard() {
                 </button>
               ))}
             </div>
-            <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>
+            <h2 className="cal-header-label" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>
               {getHeaderLabel()}
             </h2>
           </div>
 
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: 3 }}>
+          {/* Desktop: 3-button pill toggle */}
+          <div className="cal-view-toggle" style={{ display: 'flex', background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: 3 }}>
             {(['day', 'week', 'month'] as const).map(v => (
               <button key={v} type="button" onClick={() => setCalView(v)}
                 style={{
@@ -453,6 +476,23 @@ export default function AdminDashboard() {
                   transition: 'all 0.15s ease', textTransform: 'capitalize',
                 }}>
                 {v}
+              </button>
+            ))}
+          </div>
+          {/* Mobile: compact D/W/M pill (no native select — avoids OS popup positioning bugs) */}
+          <div className="cal-view-compact" style={{ display: 'none', flexShrink: 0, background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: 3 }}>
+            {([['day', 'D'], ['week', 'W'], ['month', 'M']] as const).map(([v, label]) => (
+              <button key={v} type="button" onClick={() => setCalView(v)}
+                style={{
+                  padding: '5px 10px', borderRadius: 5, border: 'none',
+                  background: calView === v ? '#FFFFFF' : 'transparent',
+                  color: calView === v ? '#1C1C1C' : 'rgba(0,0,0,0.45)',
+                  fontSize: '0.72rem', fontWeight: calView === v ? 600 : 400,
+                  cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+                  boxShadow: calView === v ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}>
+                {label}
               </button>
             ))}
           </div>
@@ -478,7 +518,7 @@ export default function AdminDashboard() {
                 })
                 return (
                   <div key={slot} style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.04)', minHeight: 60 }}>
-                    <div style={{
+                    <div className="cal-time-col" style={{
                       width: 80, flexShrink: 0, padding: '20px 16px 0',
                       fontSize: '0.72rem', color: 'rgba(0,0,0,0.35)', fontWeight: 500,
                       textAlign: 'right', borderRight: '1px solid rgba(0,0,0,0.06)',
@@ -486,7 +526,7 @@ export default function AdminDashboard() {
                       {formatTime(slot + ':00')}
                     </div>
                     <div
-                      style={{ flex: 1, padding: '8px 16px', display: 'flex', alignItems: 'center', cursor: booking || !isBlocked ? 'pointer' : 'default' }}
+                      style={{ flex: 1, minWidth: 0, padding: '8px 16px', display: 'flex', alignItems: 'center', cursor: booking || !isBlocked ? 'pointer' : 'default' }}
                       onClick={() => {
                         if (booking) openBookingPanel(booking)
                         else if (!isBlocked) openAddModal(dateStr, slot)
@@ -496,6 +536,7 @@ export default function AdminDashboard() {
                         <div style={{
                           background: sc?.bg, border: `1.5px solid ${sc?.border}`,
                           borderRadius: 6, padding: '8px 16px', width: '100%',
+                          boxSizing: 'border-box',
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         }}>
                           <div>
@@ -570,8 +611,9 @@ export default function AdminDashboard() {
 
         {/* ── WEEK VIEW ── */}
         {calView === 'week' && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <div className="cal-scroll-x">
+          <div className="cal-week-inner">
+            <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, minmax(0, 1fr))', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <div style={{ borderRight: '1px solid rgba(0,0,0,0.06)' }} />
               {getWeekDays(currentDate).map((day, i) => {
                 const dStr = day.toISOString().split('T')[0]
@@ -596,7 +638,7 @@ export default function AdminDashboard() {
             </div>
 
             {TIME_SLOTS.map(slot => (
-              <div key={slot} style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.04)', minHeight: 56 }}>
+              <div key={slot} style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, minmax(0, 1fr))', borderBottom: '1px solid rgba(0,0,0,0.04)', minHeight: 56 }}>
                 <div style={{ padding: '16px 16px 0', fontSize: '0.7rem', color: 'rgba(0,0,0,0.35)', fontWeight: 500, textAlign: 'right', borderRight: '1px solid rgba(0,0,0,0.06)' }}>
                   {formatTime(slot + ':00')}
                 </div>
@@ -628,12 +670,14 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+          </div>
         )}
 
         {/* ── MONTH VIEW ── */}
         {calView === 'month' && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <div className="cal-scroll-x">
+          <div className="cal-month-inner">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
                 <div key={d} style={{ padding: '10px', textAlign: 'center', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {d}
@@ -646,10 +690,10 @@ export default function AdminDashboard() {
               const weeks: (Date | null)[][] = []
               for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
               return weeks.map((week, wi) => (
-                <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                   {week.map((day, di) => {
                     if (!day) return (
-                      <div key={di} style={{ minHeight: 100, background: 'rgba(0,0,0,0.015)', borderRight: di < 6 ? '1px solid rgba(0,0,0,0.04)' : 'none' }} />
+                      <div key={di} style={{ minHeight: 100, background: 'rgba(0,0,0,0.015)', borderRight: di < 6 ? '1px solid rgba(0,0,0,0.04)' : 'none', minWidth: 0, overflow: 'hidden' }} />
                     )
                     const dStr = day.toISOString().split('T')[0]
                     const dayBookings = bookings.filter(b => b.booking_date === dStr)
@@ -661,6 +705,7 @@ export default function AdminDashboard() {
                           borderRight: di < 6 ? '1px solid rgba(0,0,0,0.04)' : 'none',
                           background: isToday ? 'rgba(201,169,110,0.04)' : 'transparent',
                           cursor: 'pointer',
+                          overflow: 'hidden', minWidth: 0,
                         }}
                         onClick={() => { if (dayBookings.length === 0) openAddModal(dStr, '11:00') }}
                       >
@@ -699,6 +744,7 @@ export default function AdminDashboard() {
                 </div>
               ))
             })()}
+          </div>
           </div>
         )}
       </div>

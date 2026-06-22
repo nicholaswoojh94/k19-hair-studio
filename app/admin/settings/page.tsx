@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
+import { MenuButton } from '@/app/admin/menu-button'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px',
@@ -199,16 +200,28 @@ export default function AdminSettings() {
   }
 
   return (
-    <div style={{ padding: '32px 40px', fontFamily: "'Poppins',sans-serif", minHeight: '100vh', background: '#F4F4F2' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 4px' }}>Settings</h1>
-        <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>Configure booking rules, loyalty program and system preferences.</p>
+    <div className="settings-page" style={{ padding: '32px 40px', fontFamily: "'Poppins',sans-serif", minHeight: '100vh', background: '#F4F4F2' }}>
+      <style>{`
+        @media (max-width: 1023px) {
+          .settings-page { padding: 20px 16px !important; }
+          .settings-section { padding: 20px 16px !important; }
+          .bh-header-row { display: none !important; }
+          .bh-row { grid-template-columns: 76px minmax(0, 1fr) minmax(0, 1fr) 50px !important; gap: 6px !important; }
+          .settings-2col { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+        <MenuButton />
+        <div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 4px' }}>Settings</h1>
+          <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>Configure booking rules, loyalty program and system preferences.</p>
+        </div>
       </div>
 
       <div style={{ maxWidth: 720 }}>
 
         {/* Booking settings */}
-        <div style={sectionStyle}>
+        <div className="settings-section" style={sectionStyle}>
           <p style={sectionLabelStyle}>Booking Settings</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
             <div>
@@ -238,7 +251,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Business hours */}
-        <div style={sectionStyle}>
+        <div className="settings-section" style={sectionStyle}>
           <p style={sectionLabelStyle}>Business Hours</p>
           <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 20px' }}>
             Set opening and closing times per day. Toggle &quot;Closed&quot; to block all slots for that day.
@@ -246,7 +259,7 @@ export default function AdminSettings() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {/* Header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+            <div className="bh-header-row" style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Day</span>
               <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Opens</span>
               <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Closes</span>
@@ -257,7 +270,7 @@ export default function AdminSettings() {
               const row = businessHours.find(r => r.day_of_week === dayIndex)
               if (!row) return null
               return (
-                <div key={dayIndex} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center' }}>
+                <div key={dayIndex} className="bh-row" style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px', gap: 12, alignItems: 'center' }}>
                   <span style={{ fontSize: '0.85rem', fontWeight: row.is_closed ? 400 : 500, color: row.is_closed ? 'rgba(0,0,0,0.3)' : '#1C1C1C' }}>
                     {DAY_NAMES[dayIndex]}
                   </span>
@@ -327,7 +340,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Loyalty settings */}
-        <div style={sectionStyle}>
+        <div className="settings-section" style={sectionStyle}>
           <p style={sectionLabelStyle}>Loyalty Program</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
             <div>
@@ -357,7 +370,7 @@ export default function AdminSettings() {
         </div>
 
         {/* OTP / Test mode */}
-        <div style={sectionStyle}>
+        <div className="settings-section" style={sectionStyle}>
           <p style={sectionLabelStyle}>OTP & Notifications</p>
 
           {/* Toggle 1 — Test mode */}
@@ -427,7 +440,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Change password */}
-        <div style={sectionStyle}>
+        <div className="settings-section" style={sectionStyle}>
           <p style={sectionLabelStyle}>Change Password</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
             <div>

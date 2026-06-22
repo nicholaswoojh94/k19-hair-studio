@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
+import { MenuButton } from '@/app/admin/menu-button'
 
 type Service = {
   id: string
@@ -161,7 +162,7 @@ export default function AdminServices() {
         }}
       />
       {/* Panel */}
-      <div style={{
+      <div className="services-side-panel" style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: 460,
         background: '#FFFFFF',
@@ -356,12 +357,18 @@ export default function AdminServices() {
   )
 
   return (
-    <div style={{
+    <div className="services-page" style={{
       padding: '32px 40px',
       fontFamily: "'Poppins',sans-serif",
       minHeight: '100vh',
       background: '#F4F4F2',
     }}>
+      <style>{`
+        @media (max-width: 1023px) {
+          .services-page { padding: 20px 16px !important; }
+          .services-side-panel { width: 100vw !important; }
+        }
+      `}</style>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -369,18 +376,21 @@ export default function AdminServices() {
         alignItems: 'flex-start',
         marginBottom: 28,
       }}>
-        <div>
-          <h1 style={{
-            fontSize: '1.5rem', fontWeight: 600,
-            color: '#1C1C1C', margin: '0 0 4px',
-          }}>
-            Services
-          </h1>
-          <p style={{
-            fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0,
-          }}>
-            {services.length} services · {services.filter(s => s.is_active).length} active
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MenuButton />
+          <div>
+            <h1 style={{
+              fontSize: '1.5rem', fontWeight: 600,
+              color: '#1C1C1C', margin: '0 0 4px',
+            }}>
+              Services
+            </h1>
+            <p style={{
+              fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0,
+            }}>
+              {services.length} services · {services.filter(s => s.is_active).length} active
+            </p>
+          </div>
         </div>
         <button type="button" onClick={openAdd}
           style={{

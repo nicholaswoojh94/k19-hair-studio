@@ -1,10 +1,46 @@
 'use client'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const scrollLockY = useRef(0)
+
+  // Close drawer on route change
+  useEffect(() => { setSidebarOpen(false) }, [pathname])
+
+  // iOS-safe scroll lock: position:fixed + stored scrollY prevents momentum scroll
+  useEffect(() => {
+    if (sidebarOpen) {
+      scrollLockY.current = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollLockY.current}px`
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      window.scrollTo(0, scrollLockY.current)
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+    }
+  }, [sidebarOpen])
+
+  // Listen for open events dispatched by the inline MenuButton in each page
+  useEffect(() => {
+    const handleOpen = () => setSidebarOpen(true)
+    window.addEventListener('k19:sidebar-open', handleOpen)
+    return () => window.removeEventListener('k19:sidebar-open', handleOpen)
+  }, [])
 
   if (pathname === '/admin/login') {
     return <>{children}</>
@@ -75,36 +111,107 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F4F4F2', fontFamily: "'Poppins', sans-serif" }}>
 
+      <style>{`
+        /* Desktop: sidebar always visible, inline hamburger hidden */
+        @media (min-width: 1024px) {
+          .admin-sidebar {
+            transform: none !important;
+            transition: none !important;
+            box-shadow: none !important;
+          }
+          .admin-main { margin-left: 240px; }
+          .admin-hamburger-btn { display: none !important; }
+          .admin-backdrop { display: none !important; }
+          .admin-sidebar-close { display: none !important; }
+        }
+        /* Mobile/tablet: sidebar is a slide-in drawer */
+        @media (max-width: 1023px) {
+          .admin-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .admin-sidebar.open {
+            transform: translateX(0);
+            box-shadow: 4px 0 32px rgba(0,0,0,0.35);
+          }
+          .admin-main { margin-left: 0; overflow-x: hidden; }
+          .admin-hamburger-btn { display: flex !important; }
+          .admin-sidebar-close { display: flex !important; }
+        }
+      `}</style>
+
+      {/* Backdrop — only rendered when open; CSS hides it on desktop */}
+      {sidebarOpen && (
+        <div
+          className="admin-backdrop"
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.52)',
+            zIndex: 299,
+          }}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside style={{
-        width: 240,
-        background: '#1C1C1C',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        bottom: 0,
-        zIndex: 50,
-      }}>
-        {/* Logo */}
-        <div style={{ padding: '28px 24px 20px', borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand_assets/K19_logo_white_transparent.png"
-            alt="K19 Hair Studio"
-            style={{ width: 140, height: 'auto' }}
-          />
-          <p style={{
-            fontFamily: "'Poppins',sans-serif",
-            fontSize: '0.68rem',
-            color: 'rgba(250,250,248,0.3)',
-            margin: '8px 0 0',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}>
-            Admin Dashboard
-          </p>
+      <aside
+        className={`admin-sidebar${sidebarOpen ? ' open' : ''}`}
+        style={{
+          width: 240,
+          background: '#1C1C1C',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          zIndex: 300,
+        }}
+      >
+        {/* Logo + mobile close button */}
+        <div style={{ padding: '28px 24px 20px', borderBottom: '1px solid rgba(201,169,110,0.1)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand_assets/K19_logo_white_transparent.png"
+              alt="K19 Hair Studio"
+              style={{ width: 140, height: 'auto' }}
+            />
+            <p style={{
+              fontFamily: "'Poppins',sans-serif",
+              fontSize: '0.68rem',
+              color: 'rgba(250,250,248,0.3)',
+              margin: '8px 0 0',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              Admin Dashboard
+            </p>
+          </div>
+          {/* Close button — hidden on desktop via CSS */}
+          <button
+            className="admin-sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(250,250,248,0.4)',
+              padding: 4,
+              marginTop: 2,
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
         {/* Nav items */}
@@ -114,23 +221,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return (
               <div key={item.href}>
                 <Link
-                    href={item.href}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '11px 24px',
-                      color: isActive ? '#C9A96E' : 'rgba(250,250,248,0.6)',
-                      textDecoration: 'none',
-                      background: isActive ? 'rgba(201,169,110,0.08)' : 'transparent',
-                      borderLeft: isActive ? '2px solid #C9A96E' : '2px solid transparent',
-                      transition: 'all 0.2s ease',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </Link>
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '11px 24px',
+                    color: isActive ? '#C9A96E' : 'rgba(250,250,248,0.6)',
+                    textDecoration: 'none',
+                    background: isActive ? 'rgba(201,169,110,0.08)' : 'transparent',
+                    borderLeft: isActive ? '2px solid #C9A96E' : '2px solid transparent',
+                    transition: 'all 0.2s ease',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
               </div>
             )
           })}
@@ -173,7 +281,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content */}
-      <main style={{ marginLeft: 240, flex: 1, minHeight: '100vh' }}>
+      <main className="admin-main" style={{ flex: 1, minHeight: '100vh' }}>
         {children}
       </main>
     </div>

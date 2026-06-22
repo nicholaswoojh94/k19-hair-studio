@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
+import { MenuButton } from '@/app/admin/menu-button'
 
 type Photo = {
   id: string
@@ -139,20 +140,28 @@ export default function AdminGallery() {
   }
 
   return (
-    <div style={{
+    <div className="gallery-page" style={{
       padding: '32px 40px',
       fontFamily: "'Poppins',sans-serif",
       minHeight: '100vh',
       background: '#F4F4F2',
     }}>
+      <style>{`
+        @media (max-width: 1023px) {
+          .gallery-page { padding: 20px 16px !important; }
+        }
+      `}</style>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 4px' }}>
-          Gallery
-        </h1>
-        <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>
-          {photos.filter(p => p.is_active).length} active photos · {photos.length} total
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+        <MenuButton />
+        <div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 4px' }}>
+            Gallery
+          </h1>
+          <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>
+            {photos.filter(p => p.is_active).length} active photos · {photos.length} total
+          </p>
+        </div>
       </div>
 
       {/* Upload area */}

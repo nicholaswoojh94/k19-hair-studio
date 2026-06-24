@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
         )
       `)
       .eq('user_id', userId)
-      .order('booking_date', { ascending: false })
-      .order('booking_time', { ascending: false })
+      .order('booking_date', { ascending: true })
+      .order('booking_time', { ascending: true })
 
     if (error) {
       console.error('Fetch bookings error:', error)

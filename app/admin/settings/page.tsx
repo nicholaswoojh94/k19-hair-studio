@@ -54,6 +54,7 @@ export default function AdminSettings() {
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [changingPw, setChangingPw] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSettings()
@@ -140,6 +141,33 @@ export default function AdminSettings() {
       }
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleImageUpload(slot: string, file: File) {
+    setUploadingImage(slot)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const endpoint = slot === 'hero'
+        ? '/api/admin/hero/upload'
+        : '/api/admin/services/images/upload'
+      if (slot !== 'hero') formData.append('category', slot)
+
+      const res = await fetch(endpoint, { method: 'POST', body: formData })
+      const data = await res.json()
+      if (res.ok) {
+        await fetchSettings()
+        setToastMsg('Image uploaded successfully.')
+        setToastType('success')
+        setShowToast(true)
+      } else {
+        setToastMsg(data.error || 'Upload failed.')
+        setToastType('error')
+        setShowToast(true)
+      }
+    } finally {
+      setUploadingImage(null)
     }
   }
 
@@ -437,6 +465,119 @@ export default function AdminSettings() {
           </div>
 
           <SaveButton keys={['whatsapp_otp_test_mode', 'whatsapp_sending_enabled']} />
+        </div>
+
+        {/* Homepage Images */}
+        <div className="settings-section" style={sectionStyle}>
+          <p style={sectionLabelStyle}>Homepage Images</p>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 20px' }}>
+            Upload images for the hero background and the four service category cards. JPG, PNG or WebP · Max 10MB.
+          </p>
+
+          {/* Hero */}
+          <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px' }}>
+            Hero Background
+          </p>
+          <div style={{
+            width: '100%', height: 140, borderRadius: 6, overflow: 'hidden',
+            background: '#1C1C1C', border: '1px solid rgba(0,0,0,0.1)',
+            marginBottom: 10, position: 'relative',
+          }}>
+            {settings.hero_image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.hero_image_url} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(80%)' }} />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', fontFamily: "'Poppins',sans-serif", margin: 0 }}>
+                  No image set — using default
+                </p>
+              </div>
+            )}
+            {settings.hero_image_url && (
+              <div style={{ position: 'absolute', bottom: 8, right: 8, padding: '2px 8px', background: 'rgba(0,0,0,0.65)', borderRadius: 3 }}>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.65)', fontFamily: "'Poppins',sans-serif" }}>Current</span>
+              </div>
+            )}
+          </div>
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '9px 20px',
+            background: uploadingImage === 'hero' ? 'rgba(201,169,110,0.4)' : '#C9A96E',
+            border: 'none', borderRadius: 6, color: '#1C1C1C',
+            fontSize: '0.78rem', fontWeight: 600,
+            cursor: uploadingImage ? 'not-allowed' : 'pointer',
+            fontFamily: "'Poppins',sans-serif",
+            marginBottom: 20,
+          }}>
+            {uploadingImage === 'hero'
+              ? <><Spinner size={12} color="#1C1C1C" /> Uploading...</>
+              : settings.hero_image_url ? 'Replace Hero Image' : 'Upload Hero Image'}
+            <input
+              type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+              disabled={!!uploadingImage}
+              onChange={e => { if (e.target.files?.[0]) { handleImageUpload('hero', e.target.files[0]); e.target.value = '' } }}
+            />
+          </label>
+
+          <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', margin: '0 0 20px' }} />
+
+          {/* Service category images */}
+          <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px' }}>
+            Service Category Images
+          </p>
+          <p style={{ fontSize: '0.72rem', color: 'rgba(0,0,0,0.35)', margin: '0 0 16px' }}>
+            Portrait images (3:4 ratio recommended) for the four service cards on the homepage.
+          </p>
+          {([
+            { key: 'cuts', label: '01 — Cuts & Styling' },
+            { key: 'wash', label: '02 — Wash & Care' },
+            { key: 'colour', label: '03 — Colour & Chemical' },
+            { key: 'treatments', label: '04 — Treatments' },
+          ] as const).map(({ key, label }, i, arr) => (
+            <div key={key} style={{
+              display: 'flex', gap: 16, alignItems: 'center',
+              padding: '14px 0',
+              borderBottom: i < arr.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
+            }}>
+              <div style={{
+                width: 56, height: 74, borderRadius: 4, overflow: 'hidden',
+                background: '#1C1C1C', flexShrink: 0,
+                border: '1px solid rgba(0,0,0,0.1)',
+              }}>
+                {settings[`service_image_${key}_url`] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={settings[`service_image_${key}_url`]} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: "'Poppins',sans-serif" }}>None</span>
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '0.82rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 3px' }}>{label}</p>
+                <p style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.35)', margin: '0 0 8px' }}>
+                  {settings[`service_image_${key}_url`] ? '✓ Image uploaded' : 'No image — placeholder shown'}
+                </p>
+                <label style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', background: 'transparent',
+                  border: `1.5px solid ${uploadingImage === key ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.14)'}`,
+                  borderRadius: 5, fontSize: '0.72rem', fontWeight: 600,
+                  cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins',sans-serif", color: '#1C1C1C',
+                }}>
+                  {uploadingImage === key
+                    ? <><Spinner size={10} color="#1C1C1C" /> Uploading...</>
+                    : settings[`service_image_${key}_url`] ? 'Replace' : 'Upload Image'}
+                  <input
+                    type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                    disabled={!!uploadingImage}
+                    onChange={e => { if (e.target.files?.[0]) { handleImageUpload(key, e.target.files[0]); e.target.value = '' } }}
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Change password */}

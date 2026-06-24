@@ -6,15 +6,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 4  // 4 = success screen (not shown as numbered step)
 
 interface BookingState {
   service: string
   date: Date | null
   time: string
-  name: string
-  phone: string
-  email: string
 }
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -121,7 +118,7 @@ function Calendar({
 function StepIndicator({ current }: { current: Step }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
-      {[1,2,3,4].map((n, i) => (
+      {[1,2,3].map((n, i) => (
         <div key={n} style={{ display: 'flex', alignItems: 'center' }}>
           <div style={{
             width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -136,7 +133,7 @@ function StepIndicator({ current }: { current: Step }) {
               ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#1C1C1C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               : n}
           </div>
-          {i < 3 && (
+          {i < 2 && (
             <div style={{ width: 32, height: 1, margin: '0 4px', background: n < current ? 'rgba(201,169,110,0.5)' : 'rgba(201,169,110,0.12)', transition: 'background 0.3s ease' }}/>
           )}
         </div>
@@ -145,21 +142,12 @@ function StepIndicator({ current }: { current: Step }) {
   )
 }
 
-// ─── Shared input style ───────────────────────────────────────────────────────
-const inputStyle: React.CSSProperties = {
-  width: '100%', background: '#1C1C1C', border: '1px solid rgba(201,169,110,0.2)',
-  borderRadius: 4, padding: '0.75rem 1rem', color: '#FAFAF8',
-  fontFamily: "'Poppins',sans-serif", fontSize: '0.88rem', outline: 'none',
-  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function BookingPage() {
   const [authState, setAuthState] = useState<'loading' | 'gated' | 'allowed'>('loading')
   const [step, setStep] = useState<Step>(1)
   const [anim, setAnim] = useState(true)
-  const [booking, setBooking] = useState<BookingState>({ service: '', date: null, time: '', name: '', phone: '', email: '' })
-  const [errors, setErrors] = useState<Partial<BookingState>>({})
+  const [booking, setBooking] = useState<BookingState>({ service: '', date: null, time: '' })
   const [services, setServices] = useState<any[]>([])
   const [selectedService, setSelectedService] = useState<any>(null)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -177,21 +165,13 @@ export default function BookingPage() {
     )
   }
 
-  // Change 2 & 4: auth check + auto-fill on mount
+  // Auth check on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem('k19_user')
       if (!raw) { setAuthState('gated'); return }
-      const user = JSON.parse(raw) as { phone?: string; name?: string; email?: string }
+      JSON.parse(raw)
       setAuthState('allowed')
-      // Change 4: pre-fill Step 3 fields from stored user data
-      const storedPhone = (user.phone || '').replace(/^\+?60/, '')
-      setBooking(b => ({
-        ...b,
-        name:  user.name  || '',
-        phone: storedPhone,
-        email: user.email || '',
-      }))
     } catch {
       setAuthState('gated')
     }
@@ -246,19 +226,7 @@ export default function BookingPage() {
     setTimeout(() => { setStep(next); setAnim(true) }, 220)
   }
 
-  // Step 3 validation
-  function validateDetails(): boolean {
-    const errs: Partial<BookingState> = {}
-    if (!booking.name.trim()) errs.name = 'Full name is required.'
-    if (!booking.phone.trim()) errs.phone = 'Phone number is required.'
-    if (Object.keys(errs).length) { setErrors(errs); return false }
-    setErrors({})
-    return true
-  }
-
   async function handleConfirm() {
-    if (!validateDetails()) return
-
     setSubmitting(true)
     setBookingError('')
 
@@ -524,6 +492,17 @@ export default function BookingPage() {
                                 }}>
                                   ⏱ {service.duration_minutes} min
                                 </p>
+                                {service.category === 'Haircut' && (
+                                  <p style={{
+                                    fontFamily: "'Poppins',sans-serif",
+                                    fontSize: '0.65rem',
+                                    color: 'rgba(201,169,110,0.6)',
+                                    margin: '5px 0 0',
+                                    letterSpacing: '0.01em',
+                                  }}>
+                                    ✦ Includes complimentary hairwash
+                                  </p>
+                                )}
                               </div>
                             )
                           })}
@@ -620,58 +599,30 @@ export default function BookingPage() {
             </>
           )}
 
-          {/* ══ STEP 3 — Details ══════════════════════════════════════════ */}
+          {/* ══ STEP 3 — Confirm Summary ══════════════════════════════════ */}
           {step === 3 && (
             <>
               <h2 style={{ fontFamily: "'Lora',serif", fontSize: '1.3rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.4rem', marginTop: 0 }}>
-                Almost there
+                Confirm your booking
               </h2>
               <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.8rem', color: 'rgba(250,250,248,0.35)', marginBottom: '1.5rem' }}>
-                Just a few details so we can confirm your booking.
+                Review the details below, then confirm.
               </p>
 
-              {/* Full Name */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.35)', marginBottom: '0.45rem' }}>
-                  Full Name
-                </label>
-                <input type="text" value={booking.name} placeholder="Your full name"
-                  onChange={e => { setBooking(b => ({ ...b, name: e.target.value })); setErrors(p => ({ ...p, name: '' })) }}
-                  style={inputStyle}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,169,110,0.08)' }}
-                  onBlur={e => { e.target.style.borderColor = 'rgba(201,169,110,0.2)'; e.target.style.boxShadow = 'none' }}
-                />
-                {errors.name && <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: '#E57373', marginTop: 4 }}>{errors.name}</p>}
-              </div>
-
-              {/* Phone */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.35)', marginBottom: '0.45rem' }}>
-                  Phone Number
-                </label>
-                <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(201,169,110,0.2)', borderRadius: 4, padding: '0.75rem 0.875rem', fontFamily: "'Poppins',sans-serif", fontSize: '0.88rem', color: 'rgba(250,250,248,0.45)', whiteSpace: 'nowrap', flexShrink: 0 }}>+60</div>
-                  <input type="tel" value={booking.phone} placeholder="11-2778 5730" maxLength={12}
-                    onChange={e => { setBooking(b => ({ ...b, phone: e.target.value })); setErrors(p => ({ ...p, phone: '' })) }}
-                    style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                    onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,169,110,0.08)' }}
-                    onBlur={e => { e.target.style.borderColor = 'rgba(201,169,110,0.2)'; e.target.style.boxShadow = 'none' }}
-                  />
-                </div>
-                {errors.phone && <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: '#E57373', marginTop: 4 }}>{errors.phone}</p>}
-              </div>
-
-              {/* Email (optional) */}
-              <div style={{ marginBottom: '1.75rem' }}>
-                <label style={{ display: 'block', fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.35)', marginBottom: '0.45rem' }}>
-                  Email <span style={{ textTransform: 'none', letterSpacing: 0, opacity: 0.5 }}>(optional)</span>
-                </label>
-                <input type="email" value={booking.email} placeholder="you@email.com"
-                  onChange={e => setBooking(b => ({ ...b, email: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,169,110,0.08)' }}
-                  onBlur={e => { e.target.style.borderColor = 'rgba(201,169,110,0.2)'; e.target.style.boxShadow = 'none' }}
-                />
+              <div style={{ background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: 6, padding: '1.25rem', marginBottom: '1.5rem' }}>
+                {[
+                  { label: 'Service', value: selectedService?.name_en ?? '—' },
+                  { label: 'Date',    value: formattedDate },
+                  { label: 'Time',    value: booking.time ? formatTime(booking.time) : '—' },
+                ].map(({ label, value }, i, arr) => (
+                  <div key={label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.45rem 0' }}>
+                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.4)', letterSpacing: '0.04em' }}>{label}</span>
+                      <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.8rem', color: '#FAFAF8', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
+                    </div>
+                    {i < arr.length - 1 && <div style={{ height: 1, background: 'rgba(201,169,110,0.08)' }}/>}
+                  </div>
+                ))}
               </div>
 
               {bookingError && (
@@ -710,11 +661,9 @@ export default function BookingPage() {
               {/* Summary card */}
               <div style={{ background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: 6, padding: '1.25rem', marginBottom: '1.25rem' }}>
                 {[
-                  { label: 'Service',  value: services.find(s => s.id === booking.service)?.name_en ?? '—' },
-                  { label: 'Date',     value: formattedDate },
-                  { label: 'Time',     value: booking.time ? formatTime(booking.time) : '—' },
-                  { label: 'Name',     value: booking.name || '—' },
-                  { label: 'Phone',    value: booking.phone ? `+60 ${booking.phone}` : '—' },
+                  { label: 'Service', value: selectedService?.name_en ?? '—' },
+                  { label: 'Date',    value: formattedDate },
+                  { label: 'Time',    value: booking.time ? formatTime(booking.time) : '—' },
                 ].map(({ label, value }, i, arr) => (
                   <div key={label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.45rem 0' }}>

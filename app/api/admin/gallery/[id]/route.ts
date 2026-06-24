@@ -40,14 +40,13 @@ export async function DELETE(
   try {
     const { data: photo } = await supabaseAdmin
       .from('gallery_photos')
-      .select('storage_path')
+      .select('storage_path, after_storage_path')
       .eq('id', params.id)
       .single()
 
-    if (photo?.storage_path) {
-      await supabaseAdmin.storage
-        .from('gallery')
-        .remove([photo.storage_path])
+    if (photo) {
+      const paths = [photo.storage_path, photo.after_storage_path].filter(Boolean) as string[]
+      if (paths.length) await supabaseAdmin.storage.from('gallery').remove(paths)
     }
 
     const { error } = await supabaseAdmin

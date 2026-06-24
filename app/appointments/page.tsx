@@ -38,7 +38,7 @@ export default function AppointmentsPage() {
                   b.status === 'cancelled' ||
                   b.status === 'no_show' ||
                   (b.status === 'confirmed' && b.booking_date < today)
-                )
+                ).reverse()
 
                 setUpcomingBookings(upcoming)
                 setHistoryBookings(history)
@@ -91,7 +91,7 @@ export default function AppointmentsPage() {
               b.status === 'cancelled' ||
               b.status === 'no_show' ||
               (b.status === 'confirmed' && b.booking_date < today)
-            ))
+            ).reverse())
           }
         }
       }

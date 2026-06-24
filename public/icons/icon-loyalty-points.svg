@@ -1,0 +1,12 @@
+<svg width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Loyalty points icon">
+<circle cx="70" cy="70" r="70" fill="none" stroke="#C9A96E" stroke-width="1"/>
+<g transform="translate(70,70)">
+<path d="M-20 -14 L20 -14 L28 -2 L0 32 L-28 -2 Z" fill="#C9A96E"/>
+<path d="M-20 -14 L0 -2 L20 -14" fill="none" stroke="#1C1C1C" stroke-width="1" opacity="0.35"/>
+<path d="M-28 -2 L0 -2 L28 -2" fill="none" stroke="#1C1C1C" stroke-width="1" opacity="0.35"/>
+<path d="M0 -2 L0 32" fill="none" stroke="#1C1C1C" stroke-width="1" opacity="0.35"/>
+<path d="M-12 -2 L0 -14 L12 -2 L0 32 Z" fill="none" stroke="#1C1C1C" stroke-width="1" opacity="0.35"/>
+<path d="M34 -34 L37 -25 L46 -22 L37 -19 L34 -10 L31 -19 L22 -22 L31 -25 Z" fill="#C9A96E"/>
+<path d="M-44 14 L-46 9 L-51 7 L-46 5 L-44 0 L-42 5 L-37 7 L-42 9 Z" fill="#C9A96E"/>
+</g>
+</svg>

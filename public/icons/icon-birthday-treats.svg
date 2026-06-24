@@ -1,0 +1,9 @@
+<svg width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Birthday treats icon">
+<circle cx="70" cy="70" r="70" fill="none" stroke="#C9A96E" stroke-width="1"/>
+<g transform="translate(70,70)">
+<path d="M-24 30 L-24 0 Q-24 -8 -16 -8 L16 -8 Q24 -8 24 0 L24 30 Z" fill="#C9A96E"/>
+<rect x="-24" y="9" width="48" height="3" fill="#1C1C1C" opacity="0.3"/>
+<rect x="-2" y="-22" width="4" height="14" fill="#C9A96E"/>
+<path d="M-4 -32 Q0 -38 4 -32 Q8 -26 0 -22 Q-8 -26 -4 -32 Z" fill="#C9A96E"/>
+</g>
+</svg>

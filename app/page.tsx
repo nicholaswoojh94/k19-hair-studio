@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLang } from '@/context/LanguageContext'
+import { ImageComparisonSlider } from '@/components/ui/image-comparison-slider-horizontal'
 
 /* ── Fade-up hook ── */
 function useFadeUp() {
@@ -40,6 +41,7 @@ export default function HomePage() {
 
   const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
   const [footerHours, setFooterHours] = useState<any[]>([])
+  const [siteImages, setSiteImages] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
     fetch('/api/gallery')
@@ -52,6 +54,13 @@ export default function HomePage() {
     fetch('/api/business-hours')
       .then(res => res.json())
       .then(data => { if (data.hours) setFooterHours(data.hours) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/site-images')
+      .then(res => res.json())
+      .then(data => { if (data.images) setSiteImages(data.images) })
       .catch(() => {})
   }, [])
 
@@ -91,7 +100,7 @@ export default function HomePage() {
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600&q=80&auto=format&fit=crop"
+            src={siteImages.hero_image_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600&q=80&auto=format&fit=crop'}
             alt="K19 Hair Studio"
             style={{
               width: '100%',
@@ -145,122 +154,115 @@ export default function HomePage() {
 
 
       {/* ═══ SERVICES ════════════════════════════════════════════ */}
-      <section id="services" style={{ background: '#F5EFE6' }} className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
+      <section id="services" style={{ background: '#1C1C1C', position: 'relative' }} className="py-24 px-6">
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201,169,110,0.04) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div className="max-w-6xl mx-auto relative" style={{ zIndex: 1 }}>
+
+          {/* Header */}
           <div className="text-center mb-16 fade-up">
-            <p className="font-sans text-xs tracking-widest uppercase mb-3" style={{ color: 'rgba(28,28,28,0.4)' }}>{t('servicesLabel')}</p>
-            <h2 className="font-serif text-ink mb-4" style={{ fontSize: 'clamp(2rem,4vw,2.75rem)', letterSpacing: '-0.03em', fontWeight: 400 }}>{t('servicesTitle')}</h2>
-            <span className="gold-rule"/>
+            <p className="font-sans text-xs tracking-widest uppercase mb-3" style={{ color: 'rgba(201,169,110,0.55)' }}>
+              K19 Hair Studio
+            </p>
+            <h2 className="font-serif" style={{
+              fontSize: 'clamp(2rem,4vw,2.75rem)', letterSpacing: '-0.03em',
+              fontWeight: 400, color: '#FAFAF8', marginBottom: '1rem',
+            }}>
+              Our Services
+            </h2>
+            <p className="font-sans" style={{
+              fontSize: '0.88rem', lineHeight: 1.75, fontWeight: 300,
+              color: 'rgba(250,250,248,0.4)', maxWidth: 500, margin: '0 auto 1.5rem',
+            }}>
+              Considered craft across every chair — from a precision cut to a restorative treatment, each service is built around your hair.
+            </p>
+            <span className="gold-rule" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {/* 4-column grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: '2px', background: 'rgba(201,169,110,0.07)', borderRadius: 4, overflow: 'hidden' }}>
+            {([
+              {
+                slug: 'cuts', num: '01', title: 'Cuts & Styling',
+                desc: 'Precision cutting and finishing tailored to your shape, texture, and the way you actually wear your hair.',
+                placeholder: 'https://placehold.co/600x800/1A1A1A/2A2A2A?text=+',
+              },
+              {
+                slug: 'wash', num: '02', title: 'Wash & Care',
+                desc: 'A grounding basin ritual — gentle cleanse, scalp massage, and conditioning matched to your hair\'s needs.',
+                placeholder: 'https://placehold.co/600x800/202020/303030?text=+',
+              },
+              {
+                slug: 'colour', num: '03', title: 'Colour & Chemical',
+                desc: 'Bespoke colour and chemical services, hand-applied for depth, dimension, and lasting tone.',
+                placeholder: 'https://placehold.co/600x800/181818/282828?text=+',
+              },
+              {
+                slug: 'treatments', num: '04', title: 'Treatments',
+                desc: 'Restorative masks and serums worked through the hair to rebuild shine, strength, and softness.',
+                placeholder: 'https://placehold.co/600x800/1C1A18/2C2A28?text=+',
+              },
+            ] as const).map((card, i) => (
+              <div
+                key={card.slug}
+                className="fade-up"
+                style={{
+                  background: '#1C1C1C',
+                  transitionDelay: `${0.08 * i}s`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Portrait image */}
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  paddingBottom: '133.33%', // 3:4 aspect ratio
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={siteImages[`service_image_${card.slug}_url`] || card.placeholder}
+                    alt={card.title}
+                    style={{
+                      position: 'absolute', inset: 0,
+                      width: '100%', height: '100%',
+                      objectFit: 'cover', objectPosition: 'center',
+                    }}
+                    loading="lazy"
+                  />
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.18)' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 45%, rgba(0,0,0,0.55) 100%)' }} />
+                </div>
 
-            {/* Card 1 — Haircut */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.08s' }}>
-              <div style={{
-                width: 40, height: 40, marginBottom: '1.5rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
-                  <path d="M18 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
-                  <path d="M8.5 8.5L18 21M15.5 8.5L6 21"/>
-                </svg>
+                {/* Text */}
+                <div style={{ padding: '20px 20px 24px', flex: 1 }}>
+                  <span className="font-sans" style={{
+                    fontSize: '0.6rem', fontWeight: 700,
+                    color: '#C9A96E', letterSpacing: '0.18em',
+                    display: 'block', marginBottom: 8,
+                  }}>
+                    {card.num}
+                  </span>
+                  <div style={{ width: 18, height: 1, background: 'rgba(201,169,110,0.35)', marginBottom: 10 }} />
+                  <h3 className="font-serif" style={{
+                    fontSize: 'clamp(0.95rem, 1.5vw, 1.15rem)',
+                    fontWeight: 400, color: '#FAFAF8',
+                    letterSpacing: '-0.02em', margin: '0 0 10px',
+                  }}>
+                    {card.title}
+                  </h3>
+                  <p className="font-sans" style={{
+                    fontSize: '0.78rem', lineHeight: 1.7,
+                    color: 'rgba(250,250,248,0.4)', fontWeight: 300, margin: 0,
+                  }}>
+                    {card.desc}
+                  </p>
+                </div>
               </div>
-              <h3 className="font-serif text-ink mb-3"
-                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
-                Cuts & Styling
-              </h3>
-              <p className="font-sans" style={{
-                fontSize: '0.88rem', lineHeight: 1.75,
-                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
-              }}>
-                Precision cuts for men, women and children. From classic to contemporary —
-                tailored to your face shape, lifestyle and personal aesthetic.
-              </p>
-            </div>
-
-            {/* Card 2 — Wash */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.12s' }}>
-              <div style={{
-                width: 40, height: 40, marginBottom: '1.5rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10"/>
-                  <path d="M12 6v6l4 2"/>
-                  <path d="M18 2l4 4-4 4"/>
-                </svg>
-              </div>
-              <h3 className="font-serif text-ink mb-3"
-                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
-                Wash & Care
-              </h3>
-              <p className="font-sans" style={{
-                fontSize: '0.88rem', lineHeight: 1.75,
-                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
-              }}>
-                Professional hair wash services for men and women.
-                A relaxing, thorough cleanse using premium products
-                suited to your hair type.
-              </p>
-            </div>
-
-            {/* Card 3 — Chemical */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.16s' }}>
-              <div style={{
-                width: 40, height: 40, marginBottom: '1.5rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 3h6l1 7H8L9 3z"/>
-                  <path d="M8 10c-2 2-3 4-3 7a7 7 0 0 0 14 0c0-3-1-5-3-7"/>
-                  <path d="M12 13v5"/>
-                </svg>
-              </div>
-              <h3 className="font-serif text-ink mb-3"
-                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
-                Colour & Chemical
-              </h3>
-              <p className="font-sans" style={{
-                fontSize: '0.88rem', lineHeight: 1.75,
-                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
-              }}>
-                Full colour, highlights, bleaching, perms and straightening.
-                Vibrant, healthy transformations that last —
-                for both men and women.
-              </p>
-            </div>
-
-            {/* Card 4 — Treatment */}
-            <div className="service-card fade-up" style={{ transitionDelay: '0.20s' }}>
-              <div style={{
-                width: 40, height: 40, marginBottom: '1.5rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="#C9A96E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-              </div>
-              <h3 className="font-serif text-ink mb-3"
-                style={{ fontSize: '1.35rem', fontWeight: 400, letterSpacing: '-0.01em' }}>
-                Treatments
-              </h3>
-              <p className="font-sans" style={{
-                fontSize: '0.88rem', lineHeight: 1.75,
-                color: 'rgba(28,28,28,0.55)', fontWeight: 300,
-              }}>
-                Scalp and hair treatments, keratin smoothing.
-                Restore health, strength and lustre with
-                professional-grade care products.
-              </p>
-            </div>
-
+            ))}
           </div>
+
         </div>
       </section>
 
@@ -277,13 +279,15 @@ export default function HomePage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
             {[
-              { num: '10+', key: 'stat1' }, { num: '500+', key: 'stat2' },
-              { num: '★★',  key: 'stat3', serif: true }, { num: '100%', key: 'stat4' },
-            ].map(({ num, key, serif }, i) => (
-              <div key={key} className="text-center fade-up" style={{ transitionDelay: `${0.06 + i * 0.08}s` }}>
-                <div className={serif ? 'font-serif' : 'stat-number'} style={serif ? { fontSize: '3rem', fontWeight: 400, color: '#C9A96E', letterSpacing: '-0.03em', lineHeight: 1 } : {}}>{num}</div>
+              { heading: 'Craft Over Speed',       subtext: "Every appointment is unhurried, because a great cut can't be rushed." },
+              { heading: 'One Chair, Full Attention', subtext: "You're never just a slot in the schedule — you're the only thing we're focused on." },
+              { heading: 'Trusted Hands',          subtext: 'Years of dedicated training, refined on real people, real hair, real results.' },
+              { heading: 'Made For You',           subtext: 'No two heads are the same, so no two visits should feel the same either.' },
+            ].map(({ heading, subtext }, i) => (
+              <div key={heading} className="text-center fade-up" style={{ transitionDelay: `${0.06 + i * 0.08}s` }}>
+                <p className="font-serif" style={{ fontSize: 'clamp(1rem,1.6vw,1.2rem)', fontWeight: 400, color: '#C9A96E', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{heading}</p>
                 <div style={{ width: 24, height: 1, background: '#C9A96E', margin: '0.6rem auto 0.75rem', opacity: 0.5 }}/>
-                <p className="font-sans text-sm" style={{ fontWeight: 300, lineHeight: 1.5, color: 'rgba(250,250,248,0.5)', whiteSpace: 'pre-line' }}>{t(key)}</p>
+                <p className="font-sans text-sm" style={{ fontWeight: 300, lineHeight: 1.6, color: 'rgba(250,250,248,0.5)' }}>{subtext}</p>
               </div>
             ))}
           </div>
@@ -292,6 +296,11 @@ export default function HomePage() {
             <p className="font-serif italic" style={{ fontSize: 'clamp(1.1rem,2.5vw,1.5rem)', maxWidth: 560, margin: '0 auto', lineHeight: 1.65, color: 'rgba(250,250,248,0.25)' }}>
               {t('quote')}
             </p>
+            <div className="mt-10">
+              <Link href="/booking" className="btn-gold" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.8rem' }}>
+                BOOK YOUR APPOINTMENT
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -317,40 +326,44 @@ export default function HomePage() {
               {galleryPhotos.map((photo: any, i: number) => (
                 <div
                   key={photo.id}
-                  style={{
-                    breakInside: 'avoid',
-                    marginBottom: '16px',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                    position: 'relative',
-                  }}
+                  style={{ breakInside: 'avoid', marginBottom: '16px', borderRadius: 6, overflow: 'hidden', position: 'relative' }}
                   className="gallery-item"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt={photo.caption || `K19 Hair Studio work ${i + 1}`}
-                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
-                    loading="lazy"
-                  />
-                  {photo.caption && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      padding: '12px',
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-                    }}>
-                      <p style={{
-                        fontFamily: "'Poppins',sans-serif",
-                        fontSize: '0.75rem',
-                        color: 'rgba(250,250,248,0.8)',
-                        margin: 0,
-                      }}>
-                        {photo.caption}
-                      </p>
+                  {photo.after_image_url ? (
+                    /* Before/After pair — interactive slider */
+                    <div style={{ position: 'relative' }}>
+                      <ImageComparisonSlider
+                        leftImage={photo.url}
+                        rightImage={photo.after_image_url}
+                        altLeft={photo.caption ? `Before — ${photo.caption}` : `Before — K19 Hair Studio work ${i + 1}`}
+                        altRight={photo.caption ? `After — ${photo.caption}` : `After — K19 Hair Studio work ${i + 1}`}
+                      />
+                      {photo.caption && (
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '28px 12px 10px', background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)', pointerEvents: 'none' }}>
+                          <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', color: 'rgba(250,250,248,0.8)', margin: 0 }}>
+                            {photo.caption}
+                          </p>
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    /* Single photo — unchanged */
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.url}
+                        alt={photo.caption || `K19 Hair Studio work ${i + 1}`}
+                        style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+                        loading="lazy"
+                      />
+                      {photo.caption && (
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
+                          <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.75rem', color: 'rgba(250,250,248,0.8)', margin: 0 }}>
+                            {photo.caption}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -410,6 +423,23 @@ export default function HomePage() {
           <Link href="/booking" className="btn-gold" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.8rem' }}>
             {t('bookCta')}
           </Link>
+
+          <div style={{ marginTop: '4rem', borderTop: '1px solid rgba(201,169,110,0.1)', paddingTop: '3rem' }}>
+            <p className="font-serif" style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(250,250,248,0.35)', letterSpacing: '-0.01em', marginBottom: '2rem' }}>Why join K19?</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { title: 'Loyalty Points', desc: 'Earn points with every visit and redeem for discounts', icon: '/icons/icon-loyalty-points.svg' },
+                { title: 'Birthday Treats', desc: 'Enjoy a special reward during your birthday month',   icon: '/icons/icon-birthday-treats.svg' },
+                { title: 'Easy Booking',   desc: 'Book, reschedule and manage appointments anytime',     icon: '/icons/icon-easy-booking.svg' },
+              ].map(({ title, desc, icon }) => (
+                <div key={title} style={{ padding: '1.25rem 1rem', borderRadius: 6, background: 'rgba(201,169,110,0.04)', border: '1px solid rgba(201,169,110,0.08)', textAlign: 'center' }}>
+                  <img src={icon} alt="" width={64} height={64} style={{ display: 'block', margin: '0 auto 1rem' }} aria-hidden="true" />
+                  <p className="font-sans" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C9A96E', marginBottom: '0.4rem', letterSpacing: '0.02em' }}>{title}</p>
+                  <p className="font-sans" style={{ fontSize: '0.75rem', fontWeight: 300, color: 'rgba(250,250,248,0.35)', lineHeight: 1.55, margin: 0 }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

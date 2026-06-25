@@ -170,7 +170,11 @@ export default function BookingPage() {
     try {
       const raw = localStorage.getItem('k19_user')
       if (!raw) { setAuthState('gated'); return }
-      JSON.parse(raw)
+      const u = JSON.parse(raw)
+      if (!u.phone) {
+        window.location.href = '/auth/complete-profile?redirect=/booking'
+        return
+      }
       setAuthState('allowed')
     } catch {
       setAuthState('gated')

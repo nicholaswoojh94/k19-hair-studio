@@ -10,21 +10,19 @@ export async function POST(req: NextRequest) {
     { global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) } }
   )
   try {
-    const { userId, name, phone, email, birthday } = await req.json()
+    const { userId, phone, birthday } = await req.json()
 
-    if (!userId || !name || !email) {
-      return NextResponse.json({ error: 'userId, name and email are required' }, { status: 400 })
+    if (!userId || !phone) {
+      return NextResponse.json({ error: 'userId and phone are required' }, { status: 400 })
     }
+
+    const updates: Record<string, string> = { phone }
+    if (birthday) updates.birthday = birthday
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .upsert({
-        id: userId,
-        name,
-        phone: phone || null,
-        email,
-        birthday: birthday || null,
-      }, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', userId)
       .select()
       .single()
 
@@ -32,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, user })
 
   } catch (err) {
-    console.error('Register route error:', err)
+    console.error('Complete profile error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

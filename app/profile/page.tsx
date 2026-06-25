@@ -33,6 +33,10 @@ export default function ProfilePage() {
       const stored = localStorage.getItem('k19_user')
       if (stored) {
         const user = JSON.parse(stored)
+        if (!user.phone) {
+          window.location.href = '/auth/complete-profile?redirect=/profile'
+          return
+        }
         setName(user.name || '')
         setEmail(user.email || '')
         const rawPhone = user.phone || ''

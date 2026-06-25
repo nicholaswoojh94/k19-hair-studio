@@ -20,10 +20,6 @@ export default function AppointmentsPage() {
       const stored = localStorage.getItem('k19_user')
       if (stored) {
         const u = JSON.parse(stored)
-        if (!u.phone) {
-          window.location.href = '/auth/complete-profile?redirect=/appointments'
-          return
-        }
         setUserName(u.name ? u.name.split(' ')[0] : '')
 
         if (u.id) {

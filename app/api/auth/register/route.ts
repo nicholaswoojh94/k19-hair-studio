@@ -10,29 +10,59 @@ export async function POST(req: NextRequest) {
     { global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) } }
   )
   try {
-    const { userId, name, phone, email, birthday } = await req.json()
+    const { phone, countryCode, name, email, birthday } = await req.json()
 
-    if (!userId || !name || !email) {
-      return NextResponse.json({ error: 'userId, name and email are required' }, { status: 400 })
+    if (!phone || !name) {
+      return NextResponse.json(
+        { error: 'Phone and name are required' },
+        { status: 400 }
+      )
     }
 
+    const fullPhone = `${countryCode}${phone}`
+
+    // Check if user already exists
+    const { data: existing } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('phone', fullPhone)
+      .single()
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'An account with this phone number already exists' },
+        { status: 409 }
+      )
+    }
+
+    // Create user
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .upsert({
-        id: userId,
+      .insert({
+        phone: fullPhone,
+        country_code: countryCode,
         name,
-        phone: phone || null,
-        email,
+        email: email || null,
         birthday: birthday || null,
-      }, { onConflict: 'id' })
+      })
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('Register error:', error)
+      return NextResponse.json(
+        { error: 'Failed to create account' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ success: true, user })
 
   } catch (err) {
     console.error('Register route error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

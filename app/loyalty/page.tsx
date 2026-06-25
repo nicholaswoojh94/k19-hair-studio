@@ -38,10 +38,6 @@ export default function LoyaltyPage() {
       const stored = localStorage.getItem('k19_user')
       if (stored) {
         const user = JSON.parse(stored)
-        if (!user.phone) {
-          window.location.href = '/auth/complete-profile?redirect=/loyalty'
-          return
-        }
         if (user.id) {
           setUserId(user.id)
           fetchLoyalty(user.id)

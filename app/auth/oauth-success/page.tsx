@@ -8,39 +8,69 @@ function OAuthSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/appointments'
+  const code = searchParams.get('code')
 
   useEffect(() => {
     async function finish() {
       const supabase = getSupabaseBrowser()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
+
+      let user: { id: string; email?: string; user_metadata?: Record<string, string> } | null = null
+
+      if (code) {
+        // Exchange code — PKCE verifier is available here in browser localStorage
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error || !data.session) {
+          router.push('/login?error=oauth_failed')
+          return
+        }
+        user = data.session.user
+      } else {
+        // No code — check for an already-active session (e.g. accidental page reload)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          router.push('/login')
+          return
+        }
+        user = session.user
+      }
+
+      // User setup via service-role API (users table has RLS with no policies — anon key is blocked)
+      const res = await fetch('/api/auth/oauth-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          email: user.email || '',
+        }),
+      })
+
+      if (!res.ok) {
+        router.push('/login?error=setup_failed')
         return
       }
-      const user = session.user
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, name, phone, email, birthday')
-        .eq('id', user.id)
-        .single()
-      // Safety check — callback should have already redirected, but belt-and-suspenders
-      if (!userData?.phone) {
+
+      const { needsPhone, userData } = await res.json()
+
+      if (needsPhone) {
         router.push(`/auth/complete-profile?redirect=${encodeURIComponent(redirectTo)}`)
         return
       }
+
       try {
         localStorage.setItem('k19_user', JSON.stringify({
           id: user.id,
           phone: userData.phone,
-          name: userData?.name || user.user_metadata?.full_name || '',
+          name: userData.name || '',
           email: user.email || '',
-          birthday: userData?.birthday || '',
+          birthday: userData.birthday || '',
         }))
       } catch { /* ignore */ }
+
       router.push(redirectTo)
     }
     finish()
-  }, [router, redirectTo])
+  }, [router, redirectTo, code])
 
   return (
     <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

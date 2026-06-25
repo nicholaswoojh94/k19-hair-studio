@@ -17,9 +17,25 @@ function OAuthSuccessContent() {
       let user: { id: string; email?: string; user_metadata?: Record<string, string> } | null = null
 
       if (code) {
+        // DEBUG — remove once OAuth flow is confirmed working
+        const PKCE_KEY = 'sb-dkwikhmkzxdqmtzpfthb-auth-token-code-verifier'
+        const verifier = localStorage.getItem(PKCE_KEY)
+        console.debug('[oauth-success] code present:', !!code, '| code length:', code.length)
+        console.debug('[oauth-success] PKCE verifier in localStorage:', verifier ? `FOUND (${verifier.length} chars)` : 'MISSING')
+        console.debug('[oauth-success] all localStorage keys:', Object.keys(localStorage))
+        // END DEBUG
+
         // Exchange code — PKCE verifier is available here in browser localStorage
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (error || !data.session) {
+          // DEBUG — remove once OAuth flow is confirmed working
+          console.error('[oauth-success] exchangeCodeForSession failed')
+          console.error('[oauth-success] error.message:', error?.message)
+          console.error('[oauth-success] error.status:', (error as any)?.status)
+          console.error('[oauth-success] full error object:', JSON.stringify(error, null, 2))
+          console.error('[oauth-success] data.session present:', !!data?.session)
+          console.error('[oauth-success] PKCE verifier after failed exchange:', localStorage.getItem(PKCE_KEY))
+          // END DEBUG
           router.push('/login?error=oauth_failed')
           return
         }

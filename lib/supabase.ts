@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 export function getSupabase() {
   return createClient(
@@ -8,12 +8,19 @@ export function getSupabase() {
   )
 }
 
-export function getSupabaseBrowser() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { flowType: 'pkce' } }
-  )
+// Singleton — one instance per page load, shared across all 'use client' callers.
+// Multiple instances under the same storage key break PKCE (concurrent verifier reads/deletes).
+let _browserClient: SupabaseClient | null = null
+
+export function getSupabaseBrowser(): SupabaseClient {
+  if (!_browserClient) {
+    _browserClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { flowType: 'pkce' } }
+    )
+  }
+  return _browserClient
 }
 
 export function getSupabaseAdmin() {

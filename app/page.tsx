@@ -423,23 +423,6 @@ export default function HomePage() {
           <Link href="/booking" className="btn-gold" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem', fontSize: '0.8rem' }}>
             {t('bookCta')}
           </Link>
-
-          <div style={{ marginTop: '4rem', borderTop: '1px solid rgba(201,169,110,0.1)', paddingTop: '3rem' }}>
-            <p className="font-serif" style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(250,250,248,0.35)', letterSpacing: '-0.01em', marginBottom: '2rem' }}>Why join K19?</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { title: 'Loyalty Points', desc: 'Earn points with every visit and redeem for discounts', icon: '/icons/icon-loyalty-points.svg' },
-                { title: 'Birthday Treats', desc: 'Enjoy a special reward during your birthday month',   icon: '/icons/icon-birthday-treats.svg' },
-                { title: 'Easy Booking',   desc: 'Book, reschedule and manage appointments anytime',     icon: '/icons/icon-easy-booking.svg' },
-              ].map(({ title, desc, icon }) => (
-                <div key={title} style={{ padding: '1.25rem 1rem', borderRadius: 6, background: 'rgba(201,169,110,0.04)', border: '1px solid rgba(201,169,110,0.08)', textAlign: 'center' }}>
-                  <img src={icon} alt="" width={64} height={64} style={{ display: 'block', margin: '0 auto 1rem' }} aria-hidden="true" />
-                  <p className="font-sans" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C9A96E', marginBottom: '0.4rem', letterSpacing: '0.02em' }}>{title}</p>
-                  <p className="font-sans" style={{ fontSize: '0.75rem', fontWeight: 300, color: 'rgba(250,250,248,0.35)', lineHeight: 1.55, margin: 0 }}>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 

@@ -300,9 +300,24 @@ export default function BookingPage() {
           {/* Gold rule */}
           <div style={{ width: 48, height: 1, background: '#C9A96E', margin: '0 auto 2rem', opacity: 0.7 }}/>
           {/* Heading */}
-          <h1 style={{ fontFamily: "'Lora',serif", fontSize: 'clamp(2rem,6vw,2.75rem)', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+          <h1 style={{ fontFamily: "'Lora',serif", fontSize: 'clamp(2rem,6vw,2.75rem)', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', letterSpacing: '-0.02em', marginBottom: '1.75rem' }}>
             Members Only
           </h1>
+          {/* Benefits */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: '1.75rem' }}>
+            {[
+              { title: 'Loyalty Points', desc: 'Earn points with every visit and redeem for discounts', icon: '/icons/icon-loyalty-points.svg' },
+              { title: 'Birthday Treats', desc: 'Enjoy a special reward during your birthday month',   icon: '/icons/icon-birthday-treats.svg' },
+              { title: 'Easy Booking',   desc: 'Book, reschedule and manage appointments anytime',     icon: '/icons/icon-easy-booking.svg' },
+            ].map(({ title, desc, icon }) => (
+              <div key={title} style={{ padding: '1rem 0.6rem', borderRadius: 6, background: 'rgba(201,169,110,0.04)', border: '1px solid rgba(201,169,110,0.08)', textAlign: 'center' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={icon} alt="" width={44} height={44} style={{ display: 'block', margin: '0 auto 0.6rem' }} aria-hidden="true" />
+                <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.7rem', fontWeight: 600, color: '#C9A96E', marginBottom: '0.3rem', letterSpacing: '0.02em' }}>{title}</p>
+                <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.65rem', fontWeight: 300, color: 'rgba(250,250,248,0.35)', lineHeight: 1.5, margin: 0 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
           {/* Subtext */}
           <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.9rem', color: 'rgba(250,250,248,0.45)', lineHeight: 1.7, maxWidth: 360, margin: '0 auto 2rem' }}>
             Create a free account to book appointments, earn loyalty points, and unlock exclusive birthday treats.

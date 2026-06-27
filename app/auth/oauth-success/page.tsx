@@ -2,7 +2,17 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-import { getSupabaseBrowser } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Self-contained browser client — PKCE flow required for OAuth code exchange.
+// Not shared via lib/supabase.ts so this dormant file compiles without touching the shared lib.
+function makeBrowserClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { flowType: 'pkce' } }
+  )
+}
 
 function OAuthSuccessContent() {
   const router = useRouter()
@@ -12,7 +22,7 @@ function OAuthSuccessContent() {
 
   useEffect(() => {
     async function finish() {
-      const supabase = getSupabaseBrowser()
+      const supabase = makeBrowserClient()
 
       let user: { id: string; email?: string; user_metadata?: Record<string, string> } | null = null
 
@@ -32,6 +42,11 @@ function OAuthSuccessContent() {
           return
         }
         user = session.user
+      }
+
+      if (!user) {
+        router.push('/login')
+        return
       }
 
       // User setup via service-role API (users table has RLS with no policies — anon key is blocked)

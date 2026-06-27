@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import Link from 'next/link'
+import { getSession } from '@/lib/session'
 
 type Transaction = {
   id: string
@@ -34,20 +35,11 @@ export default function LoyaltyPage() {
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 80)
-    try {
-      const stored = localStorage.getItem('k19_user')
-      if (stored) {
-        const user = JSON.parse(stored)
-        if (user.id) {
-          setUserId(user.id)
-          fetchLoyalty(user.id)
-        } else {
-          setLoading(false)
-        }
-      } else {
-        setLoading(false)
-      }
-    } catch {
+    const user = getSession()
+    if (user?.id) {
+      setUserId(user.id)
+      fetchLoyalty(user.id)
+    } else {
       setLoading(false)
     }
   }, [])

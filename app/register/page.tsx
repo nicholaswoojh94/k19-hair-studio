@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 import { Spinner } from '@/components/ui/spinner'
+import { setSession } from '@/lib/session'
 
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const MONTHS_BM = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']
@@ -166,15 +167,13 @@ function RegisterContent() {
         return
       }
 
-      try {
-        localStorage.setItem('k19_user', JSON.stringify({
-          id: registerData.user.id,
-          phone: fullPhone,
-          name,
-          email,
-          birthday: birthday || ''
-        }))
-      } catch { /* ignore */ }
+      setSession({
+        id: registerData.user.id,
+        phone: fullPhone,
+        name,
+        email,
+        birthday: birthday || '',
+      })
 
       router.push(redirectTo)
 

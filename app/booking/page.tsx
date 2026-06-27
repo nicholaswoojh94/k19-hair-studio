@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getSession } from '@/lib/session'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4  // 4 = success screen (not shown as numbered step)
@@ -165,16 +166,9 @@ export default function BookingPage() {
     )
   }
 
-  // Auth check on mount
+  // Auth check on mount — also refreshes the 180-day sliding session expiry
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('k19_user')
-      if (!raw) { setAuthState('gated'); return }
-      JSON.parse(raw)
-      setAuthState('allowed')
-    } catch {
-      setAuthState('gated')
-    }
+    setAuthState(getSession() ? 'allowed' : 'gated')
   }, [])
 
   useEffect(() => {
@@ -231,12 +225,11 @@ export default function BookingPage() {
     setBookingError('')
 
     try {
-      const raw = localStorage.getItem('k19_user')
-      if (!raw) {
+      const user = getSession()
+      if (!user) {
         window.location.href = '/login?redirect=/booking'
         return
       }
-      const user = JSON.parse(raw)
 
       const d = booking.date!
       const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
 import { Lang } from '@/lib/translations'
 import { Spinner } from '@/components/ui/spinner'
+import { setSession } from '@/lib/session'
 
 function LoginContent() {
   const { t, lang, setLang } = useLang()
@@ -132,15 +133,13 @@ function LoginContent() {
 
       const loginData = await loginRes.json()
 
-      try {
-        localStorage.setItem('k19_user', JSON.stringify({
-          id: loginData.user.id,
-          phone: fullPhone,
-          name: loginData.user.name || '',
-          email: loginData.user.email || '',
-          birthday: loginData.user.birthday || ''
-        }))
-      } catch { /* ignore */ }
+      setSession({
+        id: loginData.user.id,
+        phone: fullPhone,
+        name: loginData.user.name || '',
+        email: loginData.user.email || '',
+        birthday: loginData.user.birthday || '',
+      })
 
       router.push(redirectTo)
 

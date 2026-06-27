@@ -73,6 +73,15 @@ export default function AdminCustomers() {
   const [activeTab, setActiveTab] = useState<'bookings' | 'details' | 'loyalty' | 'vouchers'>('bookings')
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
 
+  const [showCreate, setShowCreate] = useState(false)
+  const [createName, setCreateName] = useState('')
+  const [createPhone, setCreatePhone] = useState('')
+  const [createCountryCode, setCreateCountryCode] = useState('+60')
+  const [createEmail, setCreateEmail] = useState('')
+  const [createBirthday, setCreateBirthday] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+
   useEffect(() => {
     fetch('/api/admin/services')
       .then(r => r.json())
@@ -179,6 +188,39 @@ export default function AdminCustomers() {
     }
   }
 
+  async function handleCreateCustomer() {
+    if (!createName.trim() || !createPhone.trim() || !createBirthday) return
+    setCreating(true)
+    setCreateError('')
+    try {
+      const res = await fetch('/api/admin/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: createName,
+          phone: createPhone,
+          countryCode: createCountryCode,
+          email: createEmail,
+          birthday: createBirthday,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCreateError(data.error || 'Failed to create customer')
+        return
+      }
+      setShowCreate(false)
+      setCreateName(''); setCreatePhone(''); setCreateEmail(''); setCreateBirthday(''); setCreateCountryCode('+60')
+      await fetchCustomers()
+      fetchDetail(data.user.id)
+      setMobileDetailOpen(true)
+      setToastMsg('Customer created successfully.')
+      setShowToast(true)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   function formatDate(d: string) {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })
   }
@@ -209,15 +251,30 @@ export default function AdminCustomers() {
           <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.35)', margin: '0 0 16px' }}>
             {customers.length} total
           </p>
-          <input
-            type="text"
-            placeholder="Search name, phone, email..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 0 }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
-          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="Search name, phone, email..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 0, flex: 1 }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+            />
+            <button
+              type="button"
+              onClick={() => { setShowCreate(true); setCreateError('') }}
+              style={{
+                flexShrink: 0, padding: '10px 14px',
+                background: '#C9A96E', border: 'none', borderRadius: 6,
+                color: '#1C1C1C', fontSize: '0.78rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+                whiteSpace: 'nowrap',
+              }}
+            >
+              + New
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -631,6 +688,103 @@ export default function AdminCustomers() {
       </div>
 
       <Toast message={toastMsg} type="success" isVisible={showToast} onClose={() => setShowToast(false)} />
+
+      {/* ── Create Customer Modal ── */}
+      {showCreate && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget) setShowCreate(false) }}
+        >
+          <div style={{ background: '#FFFFFF', borderRadius: 12, padding: '28px 28px 24px', width: '100%', maxWidth: 480, boxShadow: '0 8px 40px rgba(0,0,0,0.18)', fontFamily: "'Poppins',sans-serif" }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>Create Customer</h2>
+              <button type="button" onClick={() => setShowCreate(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'rgba(0,0,0,0.35)', padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* Name */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Full Name <span style={{ color: '#C9A96E' }}>*</span></label>
+              <input type="text" value={createName} onChange={e => setCreateName(e.target.value)} placeholder="e.g. Aisyah Rahman"
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+            </div>
+
+            {/* Phone */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Phone <span style={{ color: '#C9A96E' }}>*</span></label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select value={createCountryCode} onChange={e => setCreateCountryCode(e.target.value)}
+                  style={{ ...inputStyle, width: 'auto', flexShrink: 0, cursor: 'pointer', background: '#FAFAFA' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}>
+                  <option value="+60">🇲🇾 +60</option>
+                  <option value="+65">🇸🇬 +65</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+62">🇮🇩 +62</option>
+                  <option value="+63">🇵🇭 +63</option>
+                  <option value="+66">🇹🇭 +66</option>
+                  <option value="+84">🇻🇳 +84</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+82">🇰🇷 +82</option>
+                  <option value="+91">🇮🇳 +91</option>
+                </select>
+                <input type="tel" value={createPhone} onChange={e => setCreatePhone(e.target.value)} placeholder="11-2778 5730" maxLength={12}
+                  style={{ ...inputStyle, flex: 1 }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Email <span style={{ color: 'rgba(0,0,0,0.25)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>optional</span></label>
+              <input type="email" value={createEmail} onChange={e => setCreateEmail(e.target.value)} placeholder="customer@email.com"
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+            </div>
+
+            {/* Birthday */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>Birthday <span style={{ color: '#C9A96E' }}>*</span></label>
+              <input type="date" value={createBirthday} onChange={e => setCreateBirthday(e.target.value)}
+                style={{ ...inputStyle, color: '#1C1C1C', colorScheme: 'light' }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+            </div>
+
+            {createError && (
+              <p style={{ fontSize: '0.78rem', color: '#C62828', background: '#FFF5F5', border: '1px solid rgba(198,40,40,0.15)', borderRadius: 6, padding: '8px 12px', marginBottom: 14 }}>
+                {createError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setShowCreate(false)}
+                style={{ padding: '9px 18px', background: 'none', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, color: 'rgba(0,0,0,0.5)', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', fontFamily: "'Poppins',sans-serif" }}>
+                Cancel
+              </button>
+              <button type="button" onClick={handleCreateCustomer}
+                disabled={creating || !createName.trim() || !createPhone.trim() || !createBirthday}
+                style={{
+                  padding: '9px 20px',
+                  background: (creating || !createName.trim() || !createPhone.trim() || !createBirthday) ? 'rgba(201,169,110,0.4)' : '#C9A96E',
+                  border: 'none', borderRadius: 6, color: '#1C1C1C',
+                  fontSize: '0.78rem', fontWeight: 600,
+                  cursor: (creating || !createName.trim() || !createPhone.trim() || !createBirthday) ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins',sans-serif", display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                {creating ? <><Spinner size={12} color="#1C1C1C" /> Creating...</> : 'Create Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

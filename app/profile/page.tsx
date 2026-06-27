@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 
 import { User } from 'lucide-react'
 import { Toast } from '@/components/ui/toast'
+import { getSession, setSession } from '@/lib/session'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const COUNTRY_CODES = ['+60','+65','+61','+44','+62','+63','+66','+84','+86','+81','+82','+91','+1']
@@ -19,6 +20,7 @@ export default function ProfilePage() {
   const [visible, setVisible] = useState(false)
   const [showToast, setShowToast] = useState(false)
 
+  const [userId, setUserId] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [countryCode, setCountryCode] = useState('+60')
@@ -29,36 +31,32 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 80)
-    try {
-      const stored = localStorage.getItem('k19_user')
-      if (stored) {
-        const user = JSON.parse(stored)
-        setName(user.name || '')
-        setEmail(user.email || '')
-        const rawPhone = user.phone || ''
-        const matched = COUNTRY_CODES.find(c => rawPhone.startsWith(c))
-        if (matched) { setCountryCode(matched); setPhone(rawPhone.slice(matched.length)) }
-        else { setPhone(rawPhone) }
-        if (user.birthday) {
-          const parts = user.birthday.split('-')
-          if (parts.length === 3) {
-            setBdYear(parts[0])
-            setBdMonth(String(parseInt(parts[1], 10)))
-            setBdDay(String(parseInt(parts[2], 10)))
-          }
+    const user = getSession()
+    if (user) {
+      setUserId(user.id || '')
+      setName(user.name || '')
+      setEmail(user.email || '')
+      const rawPhone = user.phone || ''
+      const matched = COUNTRY_CODES.find(c => rawPhone.startsWith(c))
+      if (matched) { setCountryCode(matched); setPhone(rawPhone.slice(matched.length)) }
+      else { setPhone(rawPhone) }
+      if (user.birthday) {
+        const parts = user.birthday.split('-')
+        if (parts.length === 3) {
+          setBdYear(parts[0])
+          setBdMonth(String(parseInt(parts[1], 10)))
+          setBdDay(String(parseInt(parts[2], 10)))
         }
       }
-    } catch { /* ignore */ }
+    }
   }, [])
 
   function handleSave() {
-    try {
-      const birthday = bdYear && bdMonth && bdDay
-        ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
-        : ''
-      localStorage.setItem('k19_user', JSON.stringify({ phone: `${countryCode}${phone}`, name, email, birthday }))
-      localStorage.setItem('k19-user-name', name)
-    } catch { /* ignore */ }
+    const birthday = bdYear && bdMonth && bdDay
+      ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
+      : ''
+    setSession({ id: userId, phone: `${countryCode}${phone}`, name, email, birthday })
+    try { localStorage.setItem('k19-user-name', name) } catch { /* ignore */ }
     setShowToast(true)
   }
 

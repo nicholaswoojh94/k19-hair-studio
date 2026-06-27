@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/context/LanguageContext'
+import { getSession } from '@/lib/session'
 
 export default function AppointmentsPage() {
   const { t } = useLang()
@@ -16,57 +17,49 @@ export default function AppointmentsPage() {
   const [cancelError, setCancelError] = useState<string | null>(null)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('k19_user')
-      if (stored) {
-        const u = JSON.parse(stored)
-        setUserName(u.name ? u.name.split(' ')[0] : '')
-
-        if (u.id) {
-          fetch(`/api/bookings/user?userId=${u.id}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.bookings) {
-                const today = new Date().toISOString().split('T')[0]
-
-                const upcoming = data.bookings.filter((b: any) =>
-                  b.status === 'confirmed' && b.booking_date >= today
-                )
-
-                const history = data.bookings.filter((b: any) =>
-                  b.status === 'completed' ||
-                  b.status === 'cancelled' ||
-                  b.status === 'no_show' ||
-                  (b.status === 'confirmed' && b.booking_date < today)
-                ).reverse()
-
-                setUpcomingBookings(upcoming)
-                setHistoryBookings(history)
-              }
-            })
-            .catch(err => console.error('Failed to fetch bookings:', err))
-            .finally(() => setLoadingBookings(false))
-        } else {
-          setLoadingBookings(false)
-        }
+    setTimeout(() => setVisible(true), 80)
+    const u = getSession()
+    if (u) {
+      setUserName(u.name ? u.name.split(' ')[0] : '')
+      if (u.id) {
+        fetch(`/api/bookings/user?userId=${u.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.bookings) {
+              const today = new Date().toISOString().split('T')[0]
+              const upcoming = data.bookings.filter((b: any) =>
+                b.status === 'confirmed' && b.booking_date >= today
+              )
+              const history = data.bookings.filter((b: any) =>
+                b.status === 'completed' ||
+                b.status === 'cancelled' ||
+                b.status === 'no_show' ||
+                (b.status === 'confirmed' && b.booking_date < today)
+              ).reverse()
+              setUpcomingBookings(upcoming)
+              setHistoryBookings(history)
+            }
+          })
+          .catch(err => console.error('Failed to fetch bookings:', err))
+          .finally(() => setLoadingBookings(false))
       } else {
-        const legacy = localStorage.getItem('k19-user-name')
-        if (legacy) setUserName(legacy.split(' ')[0])
         setLoadingBookings(false)
       }
-    } catch {
+    } else {
+      try {
+        const legacy = localStorage.getItem('k19-user-name')
+        if (legacy) setUserName(legacy.split(' ')[0])
+      } catch { /* ignore */ }
       setLoadingBookings(false)
     }
-    setTimeout(() => setVisible(true), 80)
   }, [])
 
   async function handleCancel(bookingId: string) {
     setCancellingId(bookingId)
     setCancelError(null)
     try {
-      const stored = localStorage.getItem('k19_user')
-      if (!stored) return
-      const user = JSON.parse(stored)
+      const user = getSession()
+      if (!user) return
 
       const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
         method: 'POST',

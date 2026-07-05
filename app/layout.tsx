@@ -89,6 +89,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: desc,
       images: [heroImage],
     },
+    other: {
+      'facebook-domain-verification': 'b61jh2jr7ry75jxvf8vwaj6rl1vmw5',
+    },
   }
 }
 

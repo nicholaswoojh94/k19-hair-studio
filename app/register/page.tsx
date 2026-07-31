@@ -19,7 +19,7 @@ function RegisterContent() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/appointments'
 
-  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [step, setStep] = useState<'form' | 'emailOtp'>('form')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -27,9 +27,8 @@ function RegisterContent() {
   const [bdDay, setBdDay] = useState('')
   const [bdYear, setBdYear] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [attempts, setAttempts] = useState(0)
+  const [emailAttempts, setEmailAttempts] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [otpError, setOtpError] = useState('')
   const [resendTimer, setResendTimer] = useState(0)
   const [countryCode, setCountryCode] = useState('+60')
   const [langOpen, setLangOpen] = useState(false)
@@ -53,7 +52,8 @@ function RegisterContent() {
   const otpComplete = otp.every(d => d !== '')
   const langLabel = lang === 'en' ? 'EN' : lang === 'bm' ? 'BM' : '中文'
 
-  function startResend() {
+  function startResendTimer() {
+    if (timerRef.current) clearInterval(timerRef.current)
     setResendTimer(60)
     timerRef.current = setInterval(() => {
       setResendTimer(v => { if (v <= 1) { clearInterval(timerRef.current!); return 0 } return v - 1 })
@@ -69,46 +69,57 @@ function RegisterContent() {
     return errs
   }
 
+  async function sendEmailOtp() {
+    const birthday = bdYear && bdMonth && bdDay
+      ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
+      : null
+    const res = await fetch('/api/auth/email-otp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, countryCode, email: email.trim(), birthday }),
+    })
+    return res
+  }
+
   async function handleSubmit() {
-    if (!name || !phone) return
+    const errs = validate()
+    if (Object.keys(errs).length) { setErrors(errs); return }
 
     setLoading(true)
     setError('')
 
     try {
-      const loginRes = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, countryCode })
-      })
+      const res = await sendEmailOtp()
+      const data = await res.json()
 
-      if (loginRes.status === 200) {
-        setError('An account already exists with this number. Please login instead.')
-        setLoading(false)
+      if (!res.ok) {
+        setError(data.error || 'Failed to send verification email.')
         return
       }
 
-      const otpRes = await fetch('/api/auth/otp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `${countryCode}${phone}` })
-      })
-
-      const otpData = await otpRes.json()
-
-      if (!otpRes.ok) {
-        setError(otpData.error || 'Failed to send OTP')
-        setLoading(false)
-        return
-      }
-
-      setStep('otp')
+      setStep('emailOtp')
       setOtp(['', '', '', '', '', ''])
-      setAttempts(0)
-      setOtpError('')
+      setEmailAttempts(0)
       setTimeout(() => otpRefs.current[0]?.focus(), 100)
-      startResend()
+      startResendTimer()
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  async function handleResendEmailOtp() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await sendEmailOtp()
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Failed to resend code.'); return }
+      setOtp(['', '', '', '', '', ''])
+      setEmailAttempts(0)
+      startResendTimer()
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -126,57 +137,48 @@ function RegisterContent() {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus()
   }
 
-  async function handleVerifyOtp() {
-    if (!otp.every(d => d !== '')) return
+  async function handleVerifyEmailOtp() {
+    if (!otpComplete) return
 
     setLoading(true)
     setError('')
 
     try {
-      const fullPhone = `${countryCode}${phone}`
-
-      const verifyRes = await fetch('/api/auth/otp/verify', {
+      const verifyRes = await fetch('/api/auth/email-otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, code: otp.join('') })
+        body: JSON.stringify({ email: email.trim(), code: otp.join('') }),
       })
 
       const verifyData = await verifyRes.json()
 
       if (!verifyRes.ok) {
-        setError(verifyData.error || 'Invalid OTP')
-        setLoading(false)
+        const newAttempts = emailAttempts + 1
+        setEmailAttempts(newAttempts)
+        if (newAttempts >= 3) {
+          setError('Too many incorrect codes. Please go back and start again.')
+        } else {
+          setError(verifyData.error || 'Invalid code. Please try again.')
+          setOtp(['', '', '', '', '', ''])
+          setTimeout(() => otpRefs.current[0]?.focus(), 80)
+        }
         return
       }
 
+      const { user } = verifyData
       const birthday = bdYear && bdMonth && bdDay
         ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
-        : null
-
-      const registerRes = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, countryCode, name, email: email || null, birthday })
-      })
-
-      const registerData = await registerRes.json()
-
-      if (!registerRes.ok) {
-        setError(registerData.error || 'Failed to create account')
-        setLoading(false)
-        return
-      }
+        : ''
 
       setSession({
-        id: registerData.user.id,
-        phone: fullPhone,
-        name,
-        email,
-        birthday: birthday || '',
+        id: user.id,
+        phone: user.phone,
+        name: user.name || name,
+        email: user.email || email.trim(),
+        birthday: user.birthday || birthday,
       })
 
       router.push(redirectTo)
-
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -274,7 +276,6 @@ function RegisterContent() {
                 ))}
               </div>
             </div>
-            {/* ── End benefits ── */}
 
             {/* Full Name */}
             <div style={{ marginBottom: '1rem' }}>
@@ -310,9 +311,9 @@ function RegisterContent() {
               {errors.phone && <p style={{ fontSize: '0.75rem', color: '#E57373', marginTop: 4, fontFamily: "'Poppins',sans-serif" }}>{errors.phone}</p>}
             </div>
 
-            {/* Email */}
+            {/* Email — required */}
             <div style={{ marginBottom: '1rem' }}>
-              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regEmail')}</label>
+              <label className="font-sans" style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(250,250,248,0.4)', marginBottom: '0.5rem' }}>{t('regEmail')}<span style={{ color: '#C9A96E', marginLeft: 3 }}>*</span></label>
               <input type="email" value={email} onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })) }} className="k-input" placeholder="you@email.com"/>
               {errors.email && <p style={{ fontSize: '0.75rem', color: '#E57373', marginTop: 4, fontFamily: "'Poppins',sans-serif" }}>{errors.email}</p>}
             </div>
@@ -340,26 +341,11 @@ function RegisterContent() {
 
             <button
               className="btn-gold"
-              style={{
-                width: '100%',
-                opacity: loading ? 0.8 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
+              style={{ width: '100%', opacity: loading ? 0.8 : 1, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? (
-                <>
-                  <Spinner size={16} color="#1C1C1C" />
-                  <span>Please wait...</span>
-                </>
-              ) : (
-                'Create Account & Verify'
-              )}
+              {loading ? <><Spinner size={16} color="#1C1C1C" /><span>Sending code...</span></> : 'Create Account & Verify'}
             </button>
 
             {error && (
@@ -375,18 +361,21 @@ function RegisterContent() {
           </div>
         )}
 
-        {/* ── OTP step ── */}
-        {step === 'otp' && (
+        {/* ── Email OTP step ── */}
+        {step === 'emailOtp' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            <button onClick={() => { setStep('form'); setOtpError('') }} className="font-sans"
+            <button onClick={() => { setStep('form'); setError('') }} className="font-sans"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,250,248,0.5)', fontSize: '0.78rem', letterSpacing: '0.04em', marginBottom: '1.25rem', padding: 0, fontFamily: "'Poppins',sans-serif" }}
               onMouseOver={e => (e.currentTarget.style.color = '#C9A96E')} onMouseOut={e => (e.currentTarget.style.color = 'rgba(250,250,248,0.5)')}>
               {t('loginBack')}
             </button>
 
-            <h2 className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.5rem' }}>{t('loginCheckWa')}</h2>
+            <h2 className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.5rem' }}>
+              Check your email
+            </h2>
             <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-              {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>{countryCode} {phone}</span>
+              We sent a 6-digit code to{' '}
+              <span style={{ color: '#C9A96E', wordBreak: 'break-all' }}>{email.trim()}</span>
             </p>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }}>
@@ -395,43 +384,52 @@ function RegisterContent() {
                   type="text" inputMode="numeric" maxLength={1} value={v}
                   onChange={e => handleOtpInput(e.target.value, i)}
                   onKeyDown={e => handleOtpKey(e, i)}
-                  className="otp-box"/>
+                  className="otp-box"
+                  disabled={emailAttempts >= 3}/>
               ))}
             </div>
 
-            {(otpError || error) && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error || otpError}</p>}
+            {error && (
+              <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>
+                {error}
+              </p>
+            )}
 
-            <button
-              className="btn-gold"
-              style={{
-                width: '100%',
-                opacity: (!otpComplete || loading) ? 0.35 : 1,
-                cursor: (!otpComplete || loading) ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                animation: (!otpComplete || loading) ? 'none' : undefined,
-                pointerEvents: (!otpComplete || loading) ? 'none' : 'auto',
-              }}
-              onClick={handleVerifyOtp}
-              disabled={!otpComplete || loading}
-            >
-              {loading ? (
-                <>
-                  <Spinner size={16} color="#1C1C1C" />
-                  <span>Verifying...</span>
-                </>
-              ) : (
-                'Verify Code'
-              )}
-            </button>
+            {emailAttempts >= 3 ? (
+              <button
+                className="btn-gold"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => { setStep('form'); setError(''); setEmailAttempts(0); setOtp(['','','','','','']) }}
+              >
+                Start Over
+              </button>
+            ) : (
+              <button
+                className="btn-gold"
+                style={{
+                  width: '100%',
+                  opacity: (!otpComplete || loading) ? 0.35 : 1,
+                  cursor: (!otpComplete || loading) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  pointerEvents: (!otpComplete || loading) ? 'none' : 'auto',
+                }}
+                onClick={handleVerifyEmailOtp}
+                disabled={!otpComplete || loading}
+              >
+                {loading ? <><Spinner size={16} color="#1C1C1C" /><span>Verifying...</span></> : 'Verify Code'}
+              </button>
+            )}
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>
-              {t('loginResendPrefix')}{' '}
+              Didn&apos;t receive it?{' '}
               {resendTimer > 0
-                ? <span style={{ color: 'rgba(250,250,248,0.3)' }}>{t('loginResendIn')} 0:{String(resendTimer).padStart(2, '0')}</span>
-                : <button onClick={startResend} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C9A96E', fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', padding: 0 }}>{t('loginResendLink')}</button>
+                ? <span style={{ color: 'rgba(250,250,248,0.3)' }}>Resend in 0:{String(resendTimer).padStart(2, '0')}</span>
+                : <button
+                    onClick={handleResendEmailOtp}
+                    disabled={loading}
+                    style={{ background: 'none', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', color: '#C9A96E', fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', padding: 0 }}>
+                    Resend code
+                  </button>
               }
             </p>
           </div>

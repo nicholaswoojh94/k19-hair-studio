@@ -189,7 +189,7 @@ export default function AdminCustomers() {
   }
 
   async function handleCreateCustomer() {
-    if (!createName.trim() || !createPhone.trim() || !createBirthday) return
+    if (!createName.trim() || !createPhone.trim() || !createEmail.trim() || !createBirthday) return
     setCreating(true)
     setCreateError('')
     try {
@@ -742,7 +742,7 @@ export default function AdminCustomers() {
 
             {/* Email */}
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Email <span style={{ color: 'rgba(0,0,0,0.25)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>optional</span></label>
+              <label style={labelStyle}>Email <span style={{ color: '#C9A96E' }}>*</span></label>
               <input type="email" value={createEmail} onChange={e => setCreateEmail(e.target.value)} placeholder="customer@email.com"
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
@@ -770,13 +770,13 @@ export default function AdminCustomers() {
                 Cancel
               </button>
               <button type="button" onClick={handleCreateCustomer}
-                disabled={creating || !createName.trim() || !createPhone.trim() || !createBirthday}
+                disabled={creating || !createName.trim() || !createPhone.trim() || !createEmail.trim() || !createBirthday}
                 style={{
                   padding: '9px 20px',
-                  background: (creating || !createName.trim() || !createPhone.trim() || !createBirthday) ? 'rgba(201,169,110,0.4)' : '#C9A96E',
+                  background: (creating || !createName.trim() || !createPhone.trim() || !createEmail.trim() || !createBirthday) ? 'rgba(201,169,110,0.4)' : '#C9A96E',
                   border: 'none', borderRadius: 6, color: '#1C1C1C',
                   fontSize: '0.78rem', fontWeight: 600,
-                  cursor: (creating || !createName.trim() || !createPhone.trim() || !createBirthday) ? 'not-allowed' : 'pointer',
+                  cursor: (creating || !createName.trim() || !createPhone.trim() || !createEmail.trim() || !createBirthday) ? 'not-allowed' : 'pointer',
                   fontFamily: "'Poppins',sans-serif", display: 'flex', alignItems: 'center', gap: 8,
                 }}>
                 {creating ? <><Spinner size={12} color="#1C1C1C" /> Creating...</> : 'Create Customer'}

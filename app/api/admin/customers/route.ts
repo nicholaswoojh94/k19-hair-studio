@@ -40,11 +40,12 @@ export async function POST(req: NextRequest) {
   try {
     const { name, phone, countryCode, email, birthday } = await req.json()
 
-    if (!name?.trim() || !phone?.trim()) {
-      return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 })
+    if (!name?.trim() || !phone?.trim() || !email?.trim() || !birthday) {
+      return NextResponse.json({ error: 'Name, phone, email and birthday are required' }, { status: 400 })
     }
 
     const fullPhone = `${countryCode || '+60'}${phone.trim()}`
+    const normalEmail = email.trim().toLowerCase()
 
     const { data: existing } = await supabaseAdmin
       .from('users')
@@ -59,14 +60,28 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const { data: existingEmail } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', normalEmail)
+      .single()
+
+    if (existingEmail) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists.' },
+        { status: 409 }
+      )
+    }
+
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .insert({
         phone: fullPhone,
         country_code: countryCode || '+60',
         name: name.trim(),
-        email: email?.trim() || null,
+        email: normalEmail,
         birthday: birthday || null,
+        email_verified: true,
       })
       .select('id, name, phone, email, birthday, created_at, is_active')
       .single()

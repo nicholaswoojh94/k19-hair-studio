@@ -613,9 +613,16 @@ export default function HomePage() {
           {/* COPYRIGHT BAR */}
           <div style={{ height: 1, background: 'rgba(201,169,110,0.08)', marginBottom: '24px' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.2)', margin: 0 }}>
-              © 2026 K19 Hair Studio. All rights reserved.
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.2)', margin: 0 }}>
+                © 2026 K19 Hair Studio. All rights reserved.
+              </p>
+              <Link href="/privacy" style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.2)', textDecoration: 'none', transition: 'color 0.2s ease' }}
+                onMouseOver={e => (e.currentTarget.style.color = 'rgba(201,169,110,0.7)')}
+                onMouseOut={e => (e.currentTarget.style.color = 'rgba(250,250,248,0.2)')}>
+                Privacy Policy
+              </Link>
+            </div>
             <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.72rem', color: 'rgba(250,250,248,0.15)', margin: 0 }}>
               Crafted with care.
             </p>

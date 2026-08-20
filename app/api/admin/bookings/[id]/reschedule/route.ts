@@ -81,6 +81,7 @@ export async function PATCH(
         booking_time: startTime,
         end_time: endTime,
         service_id: serviceId,
+        reminder_sent_at: null,
       })
       .eq('id', id)
       .select()

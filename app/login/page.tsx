@@ -93,17 +93,36 @@ function LoginContent() {
   }
 
   function handleOtpInput(val: string, idx: number) {
-    val = val.replace(/\D/, '')
-    const next = [...otp]; next[idx] = val; setOtp(next)
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus()
+    const digits = val.replace(/\D/g, '')
+    // Multi-char input = mobile autofill delivering the full code via onChange
+    if (digits.length > 1) {
+      if (digits.length === 6) {
+        setOtp(digits.split(''))
+        otpRefs.current[5]?.focus()
+        handleVerifyOtp(digits)
+      }
+      return
+    }
+    const next = [...otp]; next[idx] = digits; setOtp(next)
+    if (digits && idx < 5) otpRefs.current[idx + 1]?.focus()
   }
 
   function handleOtpKey(e: React.KeyboardEvent, idx: number) {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus()
   }
 
-  async function handleVerifyOtp() {
-    if (!otp.every(d => d !== '')) return
+  function handleOtpPaste(e: React.ClipboardEvent) {
+    const digits = e.clipboardData.getData('text').replace(/\D/g, '')
+    if (digits.length !== 6) return
+    e.preventDefault()
+    setOtp(digits.split(''))
+    otpRefs.current[5]?.focus()
+    handleVerifyOtp(digits)
+  }
+
+  async function handleVerifyOtp(codeOverride?: string) {
+    const code = codeOverride ?? otp.join('')
+    if (code.length !== 6) return
 
     setLoading(true)
     setError('')
@@ -114,7 +133,7 @@ function LoginContent() {
       const verifyRes = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, code: otp.join('') })
+        body: JSON.stringify({ phone: fullPhone, code })
       })
 
       const verifyData = await verifyRes.json()
@@ -289,7 +308,7 @@ function LoginContent() {
             {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>{countryCode} {phone}</span>
           </p>
 
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }} onPaste={handleOtpPaste}>
             {otp.map((v, i) => (
               <input
                 key={i}
@@ -298,6 +317,7 @@ function LoginContent() {
                 onChange={e => handleOtpInput(e.target.value, i)}
                 onKeyDown={e => handleOtpKey(e, i)}
                 className="otp-box"
+                {...(i === 0 ? { autoComplete: 'one-time-code' } : {})}
               />
             ))}
           </div>
@@ -317,7 +337,7 @@ function LoginContent() {
               animation: (!otpComplete || loading) ? 'none' : undefined,
               pointerEvents: (!otpComplete || loading) ? 'none' : 'auto',
             }}
-            onClick={handleVerifyOtp}
+            onClick={() => handleVerifyOtp()}
             disabled={!otpComplete || loading}
           >
             {loading ? (

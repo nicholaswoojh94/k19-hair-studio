@@ -68,9 +68,11 @@ export async function POST(req: NextRequest) {
     const result = await sendOtp(phone, otp)
 
     if (!result.success) {
-      console.error('[OTP route] sendOtp failed:', result.error)
-      // OTP is stored — user can retry; don't block the flow with a 500
-      return NextResponse.json({ success: true, testMode: false, sendError: result.error })
+      console.error(`[OTP route] Dualhook send failed for phone ${phone}:`, result.error)
+      return NextResponse.json(
+        { error: result.error || 'Failed to send OTP via WhatsApp. Please try again.' },
+        { status: 502 }
+      )
     }
 
     return NextResponse.json({ success: true, testMode: false })

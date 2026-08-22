@@ -5,6 +5,8 @@ type SendOtpResult =
   | { success: true; devMode: false }
   | { success: false; error: string }
 
+const DUALHOOK_URL = 'https://api.dualhook.com/v25.0/261935040346286/messages'
+
 export async function sendOtp(phone: string, code: string): Promise<SendOtpResult> {
   const supabase = getSupabaseAdmin()
 
@@ -17,34 +19,31 @@ export async function sendOtp(phone: string, code: string): Promise<SendOtpResul
   const sendingEnabled = sendingSetting?.value === 'true'
 
   if (!sendingEnabled) {
-    console.log(`[WHATSAPP DEV MODE] Would send OTP ${code} to ${phone}`)
+    console.log(`[WHATSAPP DEV MODE] Would send OTP to ${phone}`)
     return { success: true, devMode: true }
   }
 
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN
-
-  if (!phoneNumberId || !accessToken) {
-    console.error('[WHATSAPP] Missing WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN env vars')
+  const dualhookKey = process.env.DUALHOOK_API_KEY
+  if (!dualhookKey) {
+    console.error('[WHATSAPP] Missing DUALHOOK_API_KEY env var')
     return { success: false, error: 'WhatsApp not configured — missing env vars' }
   }
 
-  const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`
+  // Dualhook requires the phone number without a leading '+'
+  const toPhone = phone.startsWith('+') ? phone.slice(1) : phone
 
   const body = {
     messaging_product: 'whatsapp',
-    to: phone,
+    to: toPhone,
     type: 'template',
     template: {
-      name: 'k19_otp_verification',
+      name: 'k19_login',
       language: { code: 'en' },
       components: [
         {
           type: 'body',
           parameters: [{ type: 'text', text: code }],
         },
-        // Include if your template has a "Copy Code" button (index 0).
-        // Remove this block if your template has no button component.
         {
           type: 'button',
           sub_type: 'url',
@@ -56,10 +55,10 @@ export async function sendOtp(phone: string, code: string): Promise<SendOtpResul
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(DUALHOOK_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${dualhookKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -70,15 +69,15 @@ export async function sendOtp(phone: string, code: string): Promise<SendOtpResul
     if (!res.ok) {
       const errMsg = data?.error?.message ?? `HTTP ${res.status}`
       const errCode = data?.error?.code ?? 'unknown'
-      console.error(`[WHATSAPP] Send failed — code ${errCode}: ${errMsg}`, JSON.stringify(data))
+      console.error(`[WHATSAPP] Dualhook send failed — code ${errCode}: ${errMsg} — phone ${toPhone}`)
       return { success: false, error: errMsg }
     }
 
-    console.log(`[WHATSAPP] OTP sent to ${phone}, message id: ${data?.messages?.[0]?.id}`)
+    console.log(`[WHATSAPP] OTP sent via Dualhook to ${toPhone}, message id: ${data?.messages?.[0]?.id ?? 'n/a'}`)
     return { success: true, devMode: false }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('[WHATSAPP] Network error sending OTP:', msg)
+    console.error(`[WHATSAPP] Network error sending OTP to ${toPhone}:`, msg)
     return { success: false, error: msg }
   }
 }

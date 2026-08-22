@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getSession } from '@/lib/session'
@@ -32,10 +32,14 @@ function Calendar({
   selected,
   onSelect,
   closedDays,
+  bookedDates,
+  onMonthChange,
 }: {
   selected: Date | null
   onSelect: (d: Date) => void
   closedDays: Set<number>
+  bookedDates?: Set<string>
+  onMonthChange?: (yr: number, mo: number) => void
 }) {
   const today = new Date(); today.setHours(0,0,0,0)
   const [yr, setYr] = useState(today.getFullYear())
@@ -44,8 +48,18 @@ function Calendar({
   const firstDay = new Date(yr, mo, 1).getDay()
   const daysInMonth = new Date(yr, mo + 1, 0).getDate()
 
-  function prevMonth() { if (mo === 0) { setMo(11); setYr(y => y - 1) } else setMo(m => m - 1) }
-  function nextMonth() { if (mo === 11) { setMo(0); setYr(y => y + 1) } else setMo(m => m + 1) }
+  function prevMonth() {
+    const newMo = mo === 0 ? 11 : mo - 1
+    const newYr = mo === 0 ? yr - 1 : yr
+    setMo(newMo); setYr(newYr)
+    onMonthChange?.(newYr, newMo)
+  }
+  function nextMonth() {
+    const newMo = mo === 11 ? 0 : mo + 1
+    const newYr = mo === 11 ? yr + 1 : yr
+    setMo(newMo); setYr(newYr)
+    onMonthChange?.(newYr, newMo)
+  }
 
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({length: daysInMonth}, (_,i) => i+1)]
 
@@ -78,11 +92,13 @@ function Calendar({
         {cells.map((day, i) => {
           if (!day) return <div key={i}/>
           const date = new Date(yr, mo, day)
-          const isClosedDay = closedDays.has(date.getDay())
-          const isPast = date < today
-          const isDisabled = isClosedDay || isPast
-          const isSelected = selected?.getTime() === date.getTime()
-          const isToday = date.getTime() === today.getTime()
+          const ds = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+          const isClosedDay   = closedDays.has(date.getDay())
+          const isPast        = date < today
+          const isFullyBooked = !isPast && !isClosedDay && (bookedDates?.has(ds) ?? false)
+          const isDisabled    = isClosedDay || isPast || isFullyBooked
+          const isSelected    = selected?.getTime() === date.getTime()
+          const isToday       = date.getTime() === today.getTime()
 
           return (
             <div key={i}
@@ -92,10 +108,11 @@ function Calendar({
                 borderRadius: '50%', margin: '0 auto',
                 fontSize: '0.78rem', fontFamily: "'Poppins',sans-serif",
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                color: isDisabled ? 'rgba(250,250,248,0.15)' : isSelected ? '#1C1C1C' : 'rgba(250,250,248,0.75)',
+                color: isDisabled ? 'rgba(250,250,248,0.18)' : isSelected ? '#1C1C1C' : 'rgba(250,250,248,0.75)',
                 background: isSelected ? '#C9A96E' : 'transparent',
                 border: isToday && !isSelected ? '1px solid rgba(201,169,110,0.4)' : '1px solid transparent',
                 fontWeight: isSelected ? 600 : 400,
+                textDecoration: isFullyBooked ? 'line-through' : 'none',
                 transition: 'all 0.15s ease',
               }}
               onMouseOver={e => { if (!isDisabled && !isSelected) (e.currentTarget as HTMLElement).style.background = 'rgba(201,169,110,0.1)' }}
@@ -156,7 +173,8 @@ export default function BookingPage() {
   const [bookingError, setBookingError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['Haircut'])
-  const [closedDays, setClosedDays] = useState<Set<number>>(new Set())
+  const [closedDays, setClosedDays]   = useState<Set<number>>(new Set())
+  const [bookedDates, setBookedDates] = useState<Set<string>>(new Set())
 
   function toggleCategory(cat: string) {
     setExpandedCategories(prev =>
@@ -197,6 +215,25 @@ export default function BookingPage() {
     fetchBusinessHours()
   }, [])
 
+  const fetchBookedDates = useCallback(async (yr: number, mo: number, serviceId: string) => {
+    if (!serviceId) return
+    setBookedDates(new Set())
+    try {
+      const res = await fetch(`/api/bookings/booked-dates?year=${yr}&month=${mo}&serviceId=${serviceId}`)
+      const data = await res.json()
+      setBookedDates(new Set<string>(data.bookedDates || []))
+    } catch {
+      setBookedDates(new Set())
+    }
+  }, [])
+
+  // Fetch booked dates for current month whenever step 2 is entered
+  useEffect(() => {
+    if (step !== 2 || !booking.service) return
+    const now = new Date()
+    fetchBookedDates(now.getFullYear(), now.getMonth(), booking.service)
+  }, [step, booking.service, fetchBookedDates])
+
   async function fetchAvailability(date: Date, serviceId: string) {
     if (!serviceId) return
     setSlotsLoading(true)
@@ -206,7 +243,20 @@ export default function BookingPage() {
       const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const res = await fetch(`/api/bookings/availability?date=${dateStr}&serviceId=${serviceId}`)
       const data = await res.json()
-      setAvailableSlots(data.availableSlots || [])
+      let slots: string[] = data.availableSlots || []
+
+      // For same-day bookings, hide slots that have already passed (+ 30-min lead time)
+      const today = new Date()
+      const isToday = d.toDateString() === today.toDateString()
+      if (isToday) {
+        const cutoff = today.getHours() * 60 + today.getMinutes() + 30
+        slots = slots.filter(slot => {
+          const [h, m] = slot.split(':').map(Number)
+          return h * 60 + m > cutoff
+        })
+      }
+
+      setAvailableSlots(slots)
     } catch {
       setAvailableSlots([])
     } finally {
@@ -551,10 +601,19 @@ export default function BookingPage() {
                 Select an available date, then a time slot.
               </p>
 
-              <Calendar selected={booking.date} closedDays={closedDays} onSelect={d => {
-                setBooking(b => ({ ...b, date: d, time: '' }))
-                fetchAvailability(d, booking.service)
-              }}/>
+              <Calendar
+                selected={booking.date}
+                closedDays={closedDays}
+                bookedDates={bookedDates}
+                onSelect={d => {
+                  setBooking(b => ({ ...b, date: d, time: '' }))
+                  fetchAvailability(d, booking.service)
+                }}
+                onMonthChange={(yr, mo) => {
+                  setBookedDates(new Set())
+                  fetchBookedDates(yr, mo, booking.service)
+                }}
+              />
 
               {/* Time slots */}
               {booking.date && (

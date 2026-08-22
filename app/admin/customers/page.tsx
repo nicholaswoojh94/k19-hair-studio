@@ -82,6 +82,15 @@ export default function AdminCustomers() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
 
+  const [localVouchers, setLocalVouchers] = useState<any[]>([])
+  const [redeemVoucher, setRedeemVoucher] = useState<any | null>(null)
+  const [redeemBookingId, setRedeemBookingId] = useState('')
+  const [redeeming, setRedeeming] = useState(false)
+
+  useEffect(() => {
+    setLocalVouchers(detail?.vouchers ?? [])
+  }, [detail])
+
   useEffect(() => {
     fetch('/api/admin/services')
       .then(r => r.json())
@@ -185,6 +194,31 @@ export default function AdminCustomers() {
       }
     } finally {
       setIssuingVoucher(false)
+    }
+  }
+
+  async function handleRedeem() {
+    if (!redeemVoucher) return
+    setRedeeming(true)
+    try {
+      const res = await fetch(`/api/admin/vouchers/${redeemVoucher.id}/redeem`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: redeemBookingId || null }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setToastMsg(data.error || 'Failed to redeem voucher.')
+        setShowToast(true)
+        return
+      }
+      setLocalVouchers(prev => prev.map(v => v.id === redeemVoucher.id ? data.voucher : v))
+      setRedeemVoucher(null)
+      setRedeemBookingId('')
+      setToastMsg('Voucher redeemed successfully.')
+      setShowToast(true)
+    } finally {
+      setRedeeming(false)
     }
   }
 
@@ -648,10 +682,10 @@ export default function AdminCustomers() {
 
                 {/* Voucher history */}
                 <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                  <p style={sectionLabel}>Issued Vouchers ({(detail.vouchers || []).length})</p>
-                  {(detail.vouchers || []).length === 0 ? (
+                  <p style={sectionLabel}>Issued Vouchers ({localVouchers.length})</p>
+                  {localVouchers.length === 0 ? (
                     <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.3)', margin: 0 }}>No vouchers issued yet.</p>
-                  ) : (detail.vouchers || []).map((v: any) => {
+                  ) : localVouchers.map((v: any) => {
                     const isExpired = !v.is_used && v.expires_at && new Date(v.expires_at) < new Date()
                     const status = v.is_used ? 'Used' : isExpired ? 'Expired' : 'Active'
                     const statusColor = status === 'Active' ? '#2E7D32' : status === 'Used' ? '#B8860B' : 'rgba(0,0,0,0.3)'
@@ -660,22 +694,44 @@ export default function AdminCustomers() {
                       : v.type === 'discount_pct' ? `${v.value}% Off`
                       : `Free: ${v.services?.name_en || 'Service'}`
                     return (
-                      <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                        <div>
+                      <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 2px' }}>{label}</p>
                           <p style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.35)', margin: '0 0 2px', letterSpacing: '0.04em' }}>{v.code}</p>
                           <p style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.3)', margin: 0 }}>
                             Issued {new Date(v.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            {v.expires_at ? ` · Expires ${new Date(v.expires_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}` : ' · No expiry'}
+                            {v.is_used && v.used_at
+                              ? ` · Used ${new Date(v.used_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                              : v.expires_at ? ` · Expires ${new Date(v.expires_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}` : ' · No expiry'}
                           </p>
                         </div>
-                        <span style={{
-                          fontSize: '0.65rem', fontWeight: 600, flexShrink: 0, marginLeft: 12,
-                          color: statusColor, background: statusBg,
-                          padding: '2px 8px', borderRadius: 3, textTransform: 'uppercase',
-                        }}>
-                          {status}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                          <span style={{
+                            fontSize: '0.65rem', fontWeight: 600,
+                            color: statusColor, background: statusBg,
+                            padding: '2px 8px', borderRadius: 3, textTransform: 'uppercase',
+                          }}>
+                            {status}
+                          </span>
+                          {status === 'Active' && (
+                            <button
+                              type="button"
+                              onClick={() => { setRedeemVoucher(v); setRedeemBookingId('') }}
+                              style={{
+                                padding: '3px 10px', fontSize: '0.68rem', fontWeight: 600,
+                                fontFamily: "'Poppins',sans-serif",
+                                border: '1px solid #C9A96E', borderRadius: 4,
+                                color: '#C9A96E', background: 'transparent', cursor: 'pointer',
+                                transition: 'background 0.15s ease, color 0.15s ease',
+                                whiteSpace: 'nowrap',
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background = '#C9A96E'; e.currentTarget.style.color = '#1C1C1C' }}
+                              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C9A96E' }}
+                            >
+                              Redeem
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -688,6 +744,97 @@ export default function AdminCustomers() {
       </div>
 
       <Toast message={toastMsg} type="success" isVisible={showToast} onClose={() => setShowToast(false)} />
+
+      {/* ── Redeem Voucher Modal ── */}
+      {redeemVoucher && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget && !redeeming) { setRedeemVoucher(null); setRedeemBookingId('') } }}
+        >
+          <div style={{ background: '#FFFFFF', borderRadius: 12, padding: '28px 28px 24px', width: '100%', maxWidth: 440, boxShadow: '0 8px 40px rgba(0,0,0,0.18)', fontFamily: "'Poppins',sans-serif" }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#1C1C1C', margin: 0 }}>Redeem Voucher</h2>
+              <button type="button" onClick={() => { setRedeemVoucher(null); setRedeemBookingId('') }} disabled={redeeming}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'rgba(0,0,0,0.35)', padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* Voucher summary */}
+            <div style={{ background: '#FAFAFA', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 8, padding: '16px 18px', marginBottom: 20 }}>
+              <p style={{ fontSize: '0.68rem', fontWeight: 600, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>
+                {redeemVoucher.type === 'discount_rm' ? 'RM Discount' : redeemVoucher.type === 'discount_pct' ? '% Discount' : 'Free Service'}
+              </p>
+              <p style={{ fontSize: '1rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 6px' }}>
+                {redeemVoucher.type === 'discount_rm' ? `RM ${redeemVoucher.value} Off`
+                  : redeemVoucher.type === 'discount_pct' ? `${redeemVoucher.value}% Off`
+                  : `Free: ${redeemVoucher.services?.name_en || 'Service'}`}
+              </p>
+              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'rgba(0,0,0,0.4)', letterSpacing: '0.06em', margin: 0 }}>
+                {redeemVoucher.code}
+              </p>
+            </div>
+
+            {/* Booking link (optional) */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ ...labelStyle, marginBottom: 6 }}>
+                Link to booking
+                {redeemVoucher.type === 'free_service' && (
+                  <span style={{ color: '#C9A96E', marginLeft: 4, fontStyle: 'normal', textTransform: 'none', fontSize: '0.65rem' }}>
+                    — recommended for free service
+                  </span>
+                )}
+                <span style={{ color: 'rgba(0,0,0,0.3)', marginLeft: 4, fontStyle: 'italic', textTransform: 'none', fontSize: '0.65rem', fontWeight: 400 }}>optional</span>
+              </label>
+              <select
+                value={redeemBookingId}
+                onChange={e => setRedeemBookingId(e.target.value)}
+                style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
+                disabled={redeeming}
+              >
+                <option value="">— No booking link —</option>
+                {(detail?.bookings || [])
+                  .filter((b: any) => ['confirmed', 'completed', 'pending'].includes(b.status))
+                  .map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {new Date(b.booking_date).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' · '}{b.booking_time?.slice(0, 5)}
+                      {' · '}{b.services?.name_en || 'Booking'}
+                      {b.status !== 'confirmed' ? ` (${b.status})` : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.45)', margin: '0 0 20px', lineHeight: 1.55 }}>
+              This will mark the voucher as redeemed. This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => { setRedeemVoucher(null); setRedeemBookingId('') }} disabled={redeeming}
+                style={{
+                  padding: '9px 18px', background: 'transparent',
+                  border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6,
+                  fontSize: '0.8rem', fontWeight: 600, color: 'rgba(0,0,0,0.45)',
+                  cursor: redeeming ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif",
+                }}>
+                Cancel
+              </button>
+              <button type="button" onClick={handleRedeem} disabled={redeeming}
+                style={{
+                  padding: '9px 20px',
+                  background: redeeming ? 'rgba(201,169,110,0.4)' : '#C9A96E',
+                  border: 'none', borderRadius: 6, color: '#1C1C1C',
+                  fontSize: '0.8rem', fontWeight: 600,
+                  cursor: redeeming ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins',sans-serif",
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                {redeeming ? <><Spinner size={12} color="#1C1C1C" /> Redeeming...</> : 'Confirm Redemption'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Create Customer Modal ── */}
       {showCreate && (

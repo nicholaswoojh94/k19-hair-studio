@@ -56,17 +56,59 @@ export default function AdminSettings() {
   const [changingPw, setChangingPw] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
 
+  const [calToken, setCalToken] = useState<string | null>(null)
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+  const [calCopied, setCalCopied] = useState(false)
+
   useEffect(() => {
     fetchSettings()
     fetchBusinessHours()
   }, [])
+
+  async function handleRegenToken() {
+    setRegenerating(true)
+    try {
+      const res = await fetch('/api/admin/calendar-feed/regenerate', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.token) {
+        setCalToken(data.token)
+        setShowRegenConfirm(false)
+        setToastMsg('Calendar link regenerated. Re-add the new link on your phone.')
+        setToastType('success')
+        setShowToast(true)
+      } else {
+        setToastMsg(data.error || 'Failed to regenerate link.')
+        setToastType('error')
+        setShowToast(true)
+      }
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  async function copyCalUrl() {
+    const url = calFeedUrl()
+    if (!url) return
+    await navigator.clipboard.writeText(url)
+    setCalCopied(true)
+    setTimeout(() => setCalCopied(false), 2000)
+  }
+
+  function calFeedUrl(): string | null {
+    if (!calToken) return null
+    const host = typeof window !== 'undefined' ? window.location.host : 'k19hairstudio.com'
+    return `webcal://${host}/api/admin/calendar-feed/${calToken}.ics`
+  }
 
   async function fetchSettings() {
     setLoading(true)
     try {
       const res = await fetch('/api/admin/settings')
       const data = await res.json()
-      setSettings(data.settings || {})
+      const s: Record<string, string> = data.settings || {}
+      setSettings(s)
+      if (s.calendar_feed_token) setCalToken(s.calendar_feed_token)
     } finally {
       setLoading(false)
     }
@@ -466,6 +508,110 @@ export default function AdminSettings() {
 
           <SaveButton keys={['whatsapp_otp_test_mode', 'whatsapp_sending_enabled']} />
         </div>
+
+        {/* Calendar Sync */}
+        <div className="settings-section" style={sectionStyle}>
+          <p style={sectionLabelStyle}>Calendar Sync</p>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 16px' }}>
+            Add this link once in your phone&apos;s calendar app to auto-sync all K19 bookings.
+            <br />
+            <span style={{ fontSize: '0.72rem' }}>iOS: Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar</span>
+          </p>
+
+          {calToken ? (
+            <>
+              {/* URL display + copy */}
+              <div style={{
+                display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14,
+                background: '#F4F4F2', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.1)',
+                padding: '10px 14px',
+              }}>
+                <span style={{
+                  flex: 1, fontSize: '0.73rem', fontFamily: 'monospace',
+                  color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  userSelect: 'all',
+                }}>
+                  {calFeedUrl()}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyCalUrl}
+                  style={{
+                    padding: '6px 14px', background: calCopied ? '#4CAF50' : '#C9A96E',
+                    border: 'none', borderRadius: 5, fontSize: '0.72rem', fontWeight: 600,
+                    color: '#1C1C1C', cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+                    flexShrink: 0, transition: 'background 0.2s ease',
+                  }}>
+                  {calCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.72rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 16px' }}>
+                New bookings may take up to a few hours to appear — this is normal calendar app behavior, not a bug.
+              </p>
+
+              {/* Regenerate */}
+              <button
+                type="button"
+                onClick={() => setShowRegenConfirm(true)}
+                style={{
+                  padding: '7px 16px', background: 'transparent',
+                  border: '1.5px solid rgba(0,0,0,0.2)', borderRadius: 5,
+                  fontSize: '0.75rem', fontWeight: 600, color: '#1C1C1C',
+                  cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+                }}>
+                Regenerate Link
+              </button>
+            </>
+          ) : (
+            <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.35)' }}>Loading calendar link…</p>
+          )}
+        </div>
+
+        {/* Regenerate confirmation modal */}
+        {showRegenConfirm && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, padding: 24,
+          }}>
+            <div style={{
+              background: '#FFFFFF', borderRadius: 12, padding: '32px 28px',
+              maxWidth: 400, width: '100%',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+              fontFamily: "'Poppins',sans-serif",
+            }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1C1C1C', margin: '0 0 10px' }}>
+                Regenerate Calendar Link?
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.5)', margin: '0 0 24px', lineHeight: 1.6 }}>
+                This will invalidate the old link immediately. You&apos;ll need to remove the old calendar subscription from your phone and re-add the new link. This cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowRegenConfirm(false)}
+                  style={{
+                    padding: '9px 20px', background: 'transparent',
+                    border: '1.5px solid rgba(0,0,0,0.15)', borderRadius: 6,
+                    fontSize: '0.82rem', fontWeight: 600, color: '#1C1C1C',
+                    cursor: 'pointer', fontFamily: "'Poppins',sans-serif",
+                  }}>
+                  Cancel
+                </button>
+                <button type="button" onClick={handleRegenToken} disabled={regenerating}
+                  style={{
+                    padding: '9px 20px', background: '#C9A96E', border: 'none',
+                    borderRadius: 6, fontSize: '0.82rem', fontWeight: 600,
+                    color: '#1C1C1C', cursor: regenerating ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Poppins',sans-serif",
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    opacity: regenerating ? 0.7 : 1,
+                  }}>
+                  {regenerating ? <><Spinner size={12} color="#1C1C1C" /> Regenerating…</> : 'Yes, Regenerate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Homepage Images */}
         <div className="settings-section" style={sectionStyle}>

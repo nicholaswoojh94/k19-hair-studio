@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     const date = searchParams.get('date')
     const serviceId = searchParams.get('serviceId')
 
+    const customerId = searchParams.get('customerId')
+
     if (!date || !serviceId) {
       return NextResponse.json(
         { error: 'Date and serviceId required' },
@@ -35,13 +37,16 @@ export async function GET(req: NextRequest) {
     // Get business hours for this specific day of week
     const dayOfWeek = new Date(date + 'T00:00:00').getDay()
 
-    const [bufferRes, hoursRes] = await Promise.all([
+    const [bufferRes, hoursRes, overrideRes] = await Promise.all([
       supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
       supabaseAdmin.from('business_hours').select('opening_time, closing_time, is_closed').eq('day_of_week', dayOfWeek).single(),
+      customerId
+        ? supabaseAdmin.from('customer_service_durations').select('duration_minutes').eq('customer_id', customerId).eq('service_id', serviceId).single()
+        : Promise.resolve({ data: null }),
     ])
 
     const bufferMinutes = parseInt(bufferRes.data?.value || '15')
-    const totalDuration = service.duration_minutes + bufferMinutes
+    const totalDuration = overrideRes.data?.duration_minutes ?? (service.duration_minutes + bufferMinutes)
 
     // If studio is closed this day, return empty immediately
     if (!hoursRes.data || hoursRes.data.is_closed) {

@@ -26,9 +26,10 @@ export async function GET(req: NextRequest) {
   )
 
   const { searchParams } = new URL(req.url)
-  const year      = parseInt(searchParams.get('year')  ?? '')
-  const month     = parseInt(searchParams.get('month') ?? '') // 0-indexed (JS month)
-  const serviceId = searchParams.get('serviceId')
+  const year       = parseInt(searchParams.get('year')  ?? '')
+  const month      = parseInt(searchParams.get('month') ?? '') // 0-indexed (JS month)
+  const serviceId  = searchParams.get('serviceId')
+  const customerId = searchParams.get('customerId')
 
   if (isNaN(year) || isNaN(month) || !serviceId) {
     return NextResponse.json({ error: 'year, month (0-indexed), serviceId required' }, { status: 400 })
@@ -40,17 +41,20 @@ export async function GET(req: NextRequest) {
     const firstStr  = dateFmt(firstDate)
     const lastStr   = dateFmt(lastDate)
 
-    const [serviceRes, bufferRes, hoursRes, bookingsRes, blockedRes] = await Promise.all([
+    const [serviceRes, bufferRes, hoursRes, bookingsRes, blockedRes, overrideRes] = await Promise.all([
       supabase.from('services').select('duration_minutes').eq('id', serviceId).single(),
       supabase.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
       supabase.from('business_hours').select('day_of_week, opening_time, closing_time, is_closed'),
       supabase.from('bookings').select('booking_date, booking_time, end_time').eq('status', 'confirmed').gte('booking_date', firstStr).lte('booking_date', lastStr),
       supabase.from('blocked_slots').select('block_date, start_time, end_time, is_full_day').gte('block_date', firstStr).lte('block_date', lastStr),
+      customerId
+        ? supabase.from('customer_service_durations').select('duration_minutes').eq('customer_id', customerId).eq('service_id', serviceId).single()
+        : Promise.resolve({ data: null }),
     ])
 
     if (!serviceRes.data) return NextResponse.json({ bookedDates: [] })
 
-    const totalDuration = serviceRes.data.duration_minutes + parseInt(bufferRes.data?.value || '15')
+    const totalDuration = overrideRes.data?.duration_minutes ?? (serviceRes.data.duration_minutes + parseInt(bufferRes.data?.value || '15'))
 
     // Index business hours by day-of-week
     const hoursByDow = new Map<number, { opening: number; closing: number; isClosed: boolean }>()

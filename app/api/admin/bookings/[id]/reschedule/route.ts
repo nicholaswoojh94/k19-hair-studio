@@ -16,24 +16,33 @@ export async function PATCH(
     const { bookingDate, bookingTime, serviceId } = await req.json()
     const { id } = params
 
-    // Get service duration and buffer
-    const { data: service } = await supabaseAdmin
-      .from('services')
-      .select('duration_minutes, buffer_minutes')
-      .eq('id', serviceId)
+    // Fetch the booking's customer_id so we can look up their duration override
+    const { data: existingBooking } = await supabaseAdmin
+      .from('bookings')
+      .select('user_id')
+      .eq('id', id)
       .single()
 
-    const { data: bufferSetting } = await supabaseAdmin
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'buffer_minutes')
-      .single()
+    // Get service duration, global buffer, and per-customer override in parallel
+    const [serviceRes, bufferSetting, overrideRes] = await Promise.all([
+      supabaseAdmin.from('services').select('duration_minutes, buffer_minutes').eq('id', serviceId).single(),
+      supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
+      existingBooking?.user_id
+        ? supabaseAdmin.from('customer_service_durations').select('duration_minutes').eq('customer_id', existingBooking.user_id).eq('service_id', serviceId).single()
+        : Promise.resolve({ data: null }),
+    ])
 
-    const globalBuffer = parseInt(bufferSetting?.value || '15')
-    const bufferMinutes = service?.buffer_minutes ?? globalBuffer
+    const service = serviceRes.data
+    const globalBuffer = parseInt(bufferSetting.data?.value || '15')
 
     const [h, m] = bookingTime.split(':').map(Number)
-    const endMins = h * 60 + m + (service?.duration_minutes || 60) + bufferMinutes
+    let endMins: number
+    if (overrideRes.data?.duration_minutes) {
+      endMins = h * 60 + m + overrideRes.data.duration_minutes
+    } else {
+      const bufferMinutes = service?.buffer_minutes ?? globalBuffer
+      endMins = h * 60 + m + (service?.duration_minutes || 60) + bufferMinutes
+    }
     const endTime = `${String(Math.floor(endMins/60)).padStart(2,'0')}:${String(endMins%60).padStart(2,'0')}:00`
     const startTime = `${bookingTime}:00`
 

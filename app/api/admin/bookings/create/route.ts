@@ -43,29 +43,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Customer required' }, { status: 400 })
     }
 
-    // Get global buffer setting
-    const { data: bufferSetting } = await supabaseAdmin
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'buffer_minutes')
-      .single()
-    const globalBuffer = parseInt(bufferSetting?.value || '15')
+    // Get global buffer, service duration, and per-customer duration override in parallel
+    const [bufferSetting, serviceRes, overrideRes] = await Promise.all([
+      supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
+      supabaseAdmin.from('services').select('duration_minutes, buffer_minutes').eq('id', serviceId).single(),
+      finalUserId
+        ? supabaseAdmin.from('customer_service_durations').select('duration_minutes').eq('customer_id', finalUserId).eq('service_id', serviceId).single()
+        : Promise.resolve({ data: null }),
+    ])
 
-    // Get service duration and per-service buffer override
-    const { data: service } = await supabaseAdmin
-      .from('services')
-      .select('duration_minutes, buffer_minutes')
-      .eq('id', serviceId)
-      .single()
-
-    // Use service-level buffer if set, otherwise fall back to global
-    const bufferMinutes = (service?.buffer_minutes !== null &&
-      service?.buffer_minutes !== undefined)
-      ? service.buffer_minutes
-      : globalBuffer
+    const service = serviceRes.data
+    const globalBuffer = parseInt(bufferSetting.data?.value || '15')
 
     const [h, m] = bookingTime.split(':').map(Number)
-    const endMins = h * 60 + m + (service?.duration_minutes || 60) + bufferMinutes
+    let endMins: number
+    if (overrideRes.data?.duration_minutes) {
+      endMins = h * 60 + m + overrideRes.data.duration_minutes
+    } else {
+      const bufferMinutes = (service?.buffer_minutes !== null && service?.buffer_minutes !== undefined)
+        ? service.buffer_minutes
+        : globalBuffer
+      endMins = h * 60 + m + (service?.duration_minutes || 60) + bufferMinutes
+    }
     const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}:00`
 
     const { data: booking, error } = await supabaseAdmin

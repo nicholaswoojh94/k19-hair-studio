@@ -19,37 +19,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get buffer minutes from admin settings
-    const { data: bufferSetting } = await supabaseAdmin
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'buffer_minutes')
-      .single()
+    // Get buffer minutes, service duration, and per-customer override in parallel
+    const [bufferSetting, service, overrideRes] = await Promise.all([
+      supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
+      supabaseAdmin.from('services').select('duration_minutes, buffer_minutes').eq('id', serviceId).single(),
+      supabaseAdmin.from('customer_service_durations').select('duration_minutes').eq('customer_id', userId).eq('service_id', serviceId).single(),
+    ])
 
-    // Get service duration
-    const { data: service } = await supabaseAdmin
-      .from('services')
-      .select('duration_minutes, buffer_minutes')
-      .eq('id', serviceId)
-      .single()
-
-    if (!service) {
+    if (!service.data) {
       return NextResponse.json(
         { error: 'Service not found' },
         { status: 404 }
       )
     }
 
-    const serviceBuffer = service.buffer_minutes
-    const globalBuffer = parseInt(bufferSetting?.value || '15')
-    const bufferMinutes = serviceBuffer !== null && serviceBuffer !== undefined
-      ? serviceBuffer
-      : globalBuffer
-
-    // Calculate end time including buffer
+    // Per-customer override takes precedence over service duration + buffer
     const [hours, minutes] = bookingTime.split(':').map(Number)
-    const totalMinutes = hours * 60 + minutes +
-      service.duration_minutes + bufferMinutes
+    let totalMinutes: number
+    if (overrideRes.data?.duration_minutes) {
+      totalMinutes = hours * 60 + minutes + overrideRes.data.duration_minutes
+    } else {
+      const serviceBuffer = service.data.buffer_minutes
+      const globalBuffer = parseInt(bufferSetting.data?.value || '15')
+      const bufferMinutes = serviceBuffer !== null && serviceBuffer !== undefined
+        ? serviceBuffer
+        : globalBuffer
+      totalMinutes = hours * 60 + minutes + service.data.duration_minutes + bufferMinutes
+    }
     const endHours = Math.floor(totalMinutes / 60)
     const endMins = totalMinutes % 60
     const endTime = `${String(endHours).padStart(2,'0')}:${String(endMins).padStart(2,'0')}:00`

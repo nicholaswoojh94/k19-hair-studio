@@ -219,7 +219,9 @@ export default function BookingPage() {
     if (!serviceId) return
     setBookedDates(new Set())
     try {
-      const res = await fetch(`/api/bookings/booked-dates?year=${yr}&month=${mo}&serviceId=${serviceId}`)
+      const user = getSession()
+      const customerParam = user ? `&customerId=${user.id}` : ''
+      const res = await fetch(`/api/bookings/booked-dates?year=${yr}&month=${mo}&serviceId=${serviceId}${customerParam}`)
       const data = await res.json()
       setBookedDates(new Set<string>(data.bookedDates || []))
     } catch {
@@ -241,7 +243,9 @@ export default function BookingPage() {
     try {
       const d = date
       const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      const res = await fetch(`/api/bookings/availability?date=${dateStr}&serviceId=${serviceId}`)
+      const user = getSession()
+      const customerParam = user ? `&customerId=${user.id}` : ''
+      const res = await fetch(`/api/bookings/availability?date=${dateStr}&serviceId=${serviceId}${customerParam}`)
       const data = await res.json()
       let slots: string[] = data.availableSlots || []
 

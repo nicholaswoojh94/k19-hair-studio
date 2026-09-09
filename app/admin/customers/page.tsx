@@ -70,7 +70,15 @@ export default function AdminCustomers() {
   const [showServiceDropdown, setShowServiceDropdown] = useState(false)
   const [services, setServices] = useState<{ id: string; name_en: string; is_active: boolean }[]>([])
 
-  const [activeTab, setActiveTab] = useState<'bookings' | 'details' | 'loyalty' | 'vouchers'>('bookings')
+  const [activeTab, setActiveTab] = useState<'bookings' | 'details' | 'loyalty' | 'vouchers' | 'timing'>('bookings')
+
+  // Service timing overrides
+  type ServiceWithOverride = { id: string; name_en: string; duration_minutes: number; buffer_minutes: number | null }
+  type Override = { service_id: string; duration_minutes: number }
+  const [allServices, setAllServices] = useState<ServiceWithOverride[]>([])
+  const [overrides, setOverrides] = useState<Record<string, Override>>({})
+  const [timingInputs, setTimingInputs] = useState<Record<string, { h: string; m: string }>>({})
+  const [savingTiming, setSavingTiming] = useState<string | null>(null)
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
 
   const [showCreate, setShowCreate] = useState(false)
@@ -94,7 +102,11 @@ export default function AdminCustomers() {
   useEffect(() => {
     fetch('/api/admin/services')
       .then(r => r.json())
-      .then(d => setServices((d.services || []).filter((s: any) => s.is_active)))
+      .then(d => {
+        const active = (d.services || []).filter((s: any) => s.is_active)
+        setServices(active)
+        setAllServices(active)
+      })
   }, [])
 
   const fetchCustomers = useCallback(async () => {
@@ -115,13 +127,30 @@ export default function AdminCustomers() {
     setSelectedId(id)
     setActiveTab('bookings')
     try {
-      const res = await fetch(`/api/admin/customers/${id}`)
-      const data = await res.json()
+      const [detailRes, overridesRes] = await Promise.all([
+        fetch(`/api/admin/customers/${id}`),
+        fetch(`/api/admin/customers/${id}/service-durations`),
+      ])
+      const data = await detailRes.json()
       setDetail(data)
       setEditName(data.customer.name || '')
       setEditEmail(data.customer.email || '')
       setEditBirthday(data.customer.birthday || '')
       setEditActive(data.customer.is_active)
+
+      const ovData = await overridesRes.json()
+      const ovMap: Record<string, Override> = {}
+      for (const ov of (ovData.overrides || [])) ovMap[ov.service_id] = ov
+      setOverrides(ovMap)
+      // Seed hour/minute inputs from existing overrides
+      const inputs: Record<string, { h: string; m: string }> = {}
+      for (const ov of (ovData.overrides || [])) {
+        inputs[ov.service_id] = {
+          h: String(Math.floor(ov.duration_minutes / 60)),
+          m: String(ov.duration_minutes % 60).padStart(2, '0'),
+        }
+      }
+      setTimingInputs(inputs)
     } finally {
       setDetailLoading(false)
     }
@@ -252,6 +281,35 @@ export default function AdminCustomers() {
       setShowToast(true)
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleSaveTiming(serviceId: string) {
+    if (!selectedId) return
+    const input = timingInputs[serviceId] || { h: '', m: '' }
+    const h = parseInt(input.h || '0')
+    const m = parseInt(input.m || '0')
+    const total = h * 60 + m
+    setSavingTiming(serviceId)
+    try {
+      const res = await fetch(`/api/admin/customers/${selectedId}/service-durations`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceId, durationMinutes: total > 0 ? total : null }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setToastMsg(data.error || 'Failed to save.'); setShowToast(true); return }
+      // Update local override state
+      if (data.action === 'deleted') {
+        setOverrides(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+        setTimingInputs(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+      } else {
+        setOverrides(prev => ({ ...prev, [serviceId]: data.override }))
+      }
+      setToastMsg(total > 0 ? 'Duration override saved.' : 'Override cleared — service reverts to standard.')
+      setShowToast(true)
+    } finally {
+      setSavingTiming(null)
     }
   }
 
@@ -406,7 +464,7 @@ export default function AdminCustomers() {
 
             {/* Tab bar */}
             <div style={{ display: 'flex', gap: '1.5rem', marginBottom: 24, borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-              {(['bookings', 'details', 'loyalty', 'vouchers'] as const).map(tab => (
+              {(['bookings', 'details', 'loyalty', 'vouchers', 'timing'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -420,7 +478,7 @@ export default function AdminCustomers() {
                     marginBottom: -1,
                   }}
                 >
-                  {tab === 'bookings' ? 'Bookings' : tab === 'details' ? 'Details' : tab === 'loyalty' ? 'Loyalty' : 'Vouchers'}
+                  {tab === 'bookings' ? 'Bookings' : tab === 'details' ? 'Details' : tab === 'loyalty' ? 'Loyalty' : tab === 'vouchers' ? 'Vouchers' : 'Timing'}
                 </button>
               ))}
             </div>
@@ -566,6 +624,93 @@ export default function AdminCustomers() {
                 ) : (
                   <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.3)', margin: 0 }}>No transactions yet.</p>
                 )}
+              </div>
+            )}
+
+            {/* ── TAB: TIMING ── */}
+            {activeTab === 'timing' && (
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 10, padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <p style={sectionLabel}>Service Duration Overrides</p>
+                <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.4)', margin: '0 0 20px', lineHeight: 1.6 }}>
+                  Set a custom total block time per service for this customer. Overrides apply to new bookings and reschedules. Leave both fields blank to use the service standard.
+                </p>
+                {allServices.length === 0 ? (
+                  <p style={{ fontSize: '0.82rem', color: 'rgba(0,0,0,0.3)' }}>No active services found.</p>
+                ) : allServices.map(svc => {
+                  const globalBuf = 15 // shown as reference only; real value from admin_settings
+                  const standardTotal = svc.duration_minutes + (svc.buffer_minutes ?? globalBuf)
+                  const stdH = Math.floor(standardTotal / 60)
+                  const stdM = standardTotal % 60
+                  const stdLabel = stdH > 0 ? `${stdH}h ${stdM > 0 ? stdM + 'm' : ''}`.trim() : `${stdM}m`
+                  const input = timingInputs[svc.id] || { h: '', m: '' }
+                  const hasOverride = !!overrides[svc.id]
+                  const isSaving = savingTiming === svc.id
+
+                  return (
+                    <div key={svc.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+                      {/* Service name + standard reference */}
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <p style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1C1C1C', margin: '0 0 2px' }}>{svc.name_en}</p>
+                        <p style={{ fontSize: '0.72rem', color: 'rgba(0,0,0,0.35)', margin: 0 }}>Standard: {stdLabel}</p>
+                      </div>
+
+                      {/* H / M inputs */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <input
+                            type="number" min="0" max="8"
+                            placeholder="0"
+                            value={input.h}
+                            onChange={e => setTimingInputs(prev => ({ ...prev, [svc.id]: { ...prev[svc.id], h: e.target.value } }))}
+                            style={{ ...inputStyle, width: 52, textAlign: 'center', padding: '8px 6px', marginBottom: 0 }}
+                            onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.4)', fontFamily: "'Poppins',sans-serif" }}>h</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <input
+                            type="number" min="0" max="59"
+                            placeholder="00"
+                            value={input.m}
+                            onChange={e => setTimingInputs(prev => ({ ...prev, [svc.id]: { ...prev[svc.id], m: e.target.value } }))}
+                            style={{ ...inputStyle, width: 52, textAlign: 'center', padding: '8px 6px', marginBottom: 0 }}
+                            onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.4)', fontFamily: "'Poppins',sans-serif" }}>m</span>
+                        </div>
+                      </div>
+
+                      {/* Save button + override badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveTiming(svc.id)}
+                          disabled={isSaving}
+                          style={{
+                            padding: '7px 14px', border: 'none', borderRadius: 5,
+                            background: isSaving ? 'rgba(201,169,110,0.4)' : '#C9A96E',
+                            color: '#1C1C1C', fontSize: '0.72rem', fontWeight: 600,
+                            cursor: isSaving ? 'not-allowed' : 'pointer',
+                            fontFamily: "'Poppins',sans-serif", whiteSpace: 'nowrap',
+                            display: 'flex', alignItems: 'center', gap: 6,
+                          }}
+                        >
+                          {isSaving ? <><Spinner size={10} color="#1C1C1C" /> Saving...</> : 'Save'}
+                        </button>
+                        {hasOverride && (
+                          <span style={{
+                            fontSize: '0.62rem', fontWeight: 600, padding: '2px 7px', borderRadius: 3,
+                            background: 'rgba(201,169,110,0.12)', color: '#B8860B',
+                          }}>
+                            CUSTOM
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
 

@@ -19,7 +19,7 @@ function RegisterContent() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/appointments'
 
-  const [step, setStep] = useState<'form' | 'emailOtp'>('form')
+  const [step, setStep] = useState<'form' | 'otp'>('form')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -27,7 +27,7 @@ function RegisterContent() {
   const [bdDay, setBdDay] = useState('')
   const [bdYear, setBdYear] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [emailAttempts, setEmailAttempts] = useState(0)
+  const [attempts, setAttempts] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [resendTimer, setResendTimer] = useState(0)
   const [countryCode, setCountryCode] = useState('+60')
@@ -69,16 +69,18 @@ function RegisterContent() {
     return errs
   }
 
-  async function sendEmailOtp() {
-    const birthday = bdYear && bdMonth && bdDay
+  function buildBirthday() {
+    return bdYear && bdMonth && bdDay
       ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
       : null
-    const res = await fetch('/api/auth/email-otp/send', {
+  }
+
+  async function sendWhatsAppOtp() {
+    return fetch('/api/auth/register/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, countryCode, email: email.trim(), birthday }),
+      body: JSON.stringify({ name, phone: phone.trim(), countryCode, email: email.trim(), birthday: buildBirthday() }),
     })
-    return res
   }
 
   async function handleSubmit() {
@@ -89,17 +91,17 @@ function RegisterContent() {
     setError('')
 
     try {
-      const res = await sendEmailOtp()
+      const res = await sendWhatsAppOtp()
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to send verification email.')
+        setError(data.error || 'Failed to send verification code.')
         return
       }
 
-      setStep('emailOtp')
+      setStep('otp')
       setOtp(['', '', '', '', '', ''])
-      setEmailAttempts(0)
+      setAttempts(0)
       setTimeout(() => otpRefs.current[0]?.focus(), 100)
       startResendTimer()
     } catch {
@@ -109,15 +111,15 @@ function RegisterContent() {
     }
   }
 
-  async function handleResendEmailOtp() {
+  async function handleResendOtp() {
     setLoading(true)
     setError('')
     try {
-      const res = await sendEmailOtp()
+      const res = await sendWhatsAppOtp()
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to resend code.'); return }
       setOtp(['', '', '', '', '', ''])
-      setEmailAttempts(0)
+      setAttempts(0)
       startResendTimer()
       setTimeout(() => otpRefs.current[0]?.focus(), 100)
     } catch {
@@ -128,33 +130,53 @@ function RegisterContent() {
   }
 
   function handleOtpInput(val: string, idx: number) {
-    val = val.replace(/\D/, '')
-    const next = [...otp]; next[idx] = val; setOtp(next)
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus()
+    const digits = val.replace(/\D/g, '')
+    if (digits.length > 1) {
+      if (digits.length === 6) {
+        setOtp(digits.split(''))
+        otpRefs.current[5]?.focus()
+        handleVerifyOtp(digits)
+      }
+      return
+    }
+    const next = [...otp]; next[idx] = digits; setOtp(next)
+    if (digits && idx < 5) otpRefs.current[idx + 1]?.focus()
   }
 
   function handleOtpKey(e: React.KeyboardEvent, idx: number) {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus()
   }
 
-  async function handleVerifyEmailOtp() {
-    if (!otpComplete) return
+  function handleOtpPaste(e: React.ClipboardEvent) {
+    const digits = e.clipboardData.getData('text').replace(/\D/g, '')
+    if (digits.length !== 6) return
+    e.preventDefault()
+    setOtp(digits.split(''))
+    otpRefs.current[5]?.focus()
+    handleVerifyOtp(digits)
+  }
+
+  async function handleVerifyOtp(codeOverride?: string) {
+    const code = codeOverride ?? otp.join('')
+    if (code.length !== 6) return
 
     setLoading(true)
     setError('')
 
     try {
-      const verifyRes = await fetch('/api/auth/email-otp/verify', {
+      const fullPhone = `${countryCode}${phone.trim()}`
+
+      const verifyRes = await fetch('/api/auth/register/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: otp.join('') }),
+        body: JSON.stringify({ phone: fullPhone, code, name: name.trim(), email: email.trim(), birthday: buildBirthday(), countryCode }),
       })
 
       const verifyData = await verifyRes.json()
 
       if (!verifyRes.ok) {
-        const newAttempts = emailAttempts + 1
-        setEmailAttempts(newAttempts)
+        const newAttempts = attempts + 1
+        setAttempts(newAttempts)
         if (newAttempts >= 3) {
           setError('Too many incorrect codes. Please go back and start again.')
         } else {
@@ -166,16 +188,13 @@ function RegisterContent() {
       }
 
       const { user } = verifyData
-      const birthday = bdYear && bdMonth && bdDay
-        ? `${bdYear}-${String(bdMonth).padStart(2,'0')}-${String(bdDay).padStart(2,'0')}`
-        : ''
 
       setSession({
         id: user.id,
         phone: user.phone,
-        name: user.name || name,
+        name: user.name || name.trim(),
         email: user.email || email.trim(),
-        birthday: user.birthday || birthday,
+        birthday: user.birthday || buildBirthday() || '',
       })
 
       router.push(redirectTo)
@@ -361,8 +380,8 @@ function RegisterContent() {
           </div>
         )}
 
-        {/* ── Email OTP step ── */}
-        {step === 'emailOtp' && (
+        {/* ── WhatsApp OTP step ── */}
+        {step === 'otp' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <button onClick={() => { setStep('form'); setError('') }} className="font-sans"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(250,250,248,0.5)', fontSize: '0.78rem', letterSpacing: '0.04em', marginBottom: '1.25rem', padding: 0, fontFamily: "'Poppins',sans-serif" }}
@@ -371,35 +390,34 @@ function RegisterContent() {
             </button>
 
             <h2 className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 400, fontStyle: 'italic', color: '#FAFAF8', marginBottom: '0.5rem' }}>
-              Check your email
+              {t('loginCheckWa')}
             </h2>
             <p className="font-sans" style={{ fontSize: '0.85rem', color: 'rgba(250,250,248,0.4)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-              We sent a 6-digit code to{' '}
-              <span style={{ color: '#C9A96E', wordBreak: 'break-all' }}>{email.trim()}</span>
+              {t('loginOtpSub')} <span style={{ color: '#C9A96E' }}>{countryCode} {phone}</span>
             </p>
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.75rem' }} onPaste={handleOtpPaste}>
               {otp.map((v, i) => (
-                <input key={i} ref={el => { otpRefs.current[i] = el }}
+                <input
+                  key={i}
+                  ref={el => { otpRefs.current[i] = el }}
                   type="text" inputMode="numeric" maxLength={1} value={v}
                   onChange={e => handleOtpInput(e.target.value, i)}
                   onKeyDown={e => handleOtpKey(e, i)}
                   className="otp-box"
-                  disabled={emailAttempts >= 3}/>
+                  disabled={attempts >= 3}
+                  {...(i === 0 ? { autoComplete: 'one-time-code' } : {})}
+                />
               ))}
             </div>
 
-            {error && (
-              <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>
-                {error}
-              </p>
-            )}
+            {error && <p style={{ fontSize: '0.78rem', color: '#E57373', marginBottom: '0.75rem', textAlign: 'center', fontFamily: "'Poppins',sans-serif" }}>{error}</p>}
 
-            {emailAttempts >= 3 ? (
+            {attempts >= 3 ? (
               <button
                 className="btn-gold"
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => { setStep('form'); setError(''); setEmailAttempts(0); setOtp(['','','','','','']) }}
+                onClick={() => { setStep('form'); setError(''); setAttempts(0); setOtp(['','','','','','']) }}
               >
                 Start Over
               </button>
@@ -413,7 +431,7 @@ function RegisterContent() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   pointerEvents: (!otpComplete || loading) ? 'none' : 'auto',
                 }}
-                onClick={handleVerifyEmailOtp}
+                onClick={() => handleVerifyOtp()}
                 disabled={!otpComplete || loading}
               >
                 {loading ? <><Spinner size={16} color="#1C1C1C" /><span>Verifying...</span></> : 'Verify Code'}
@@ -421,14 +439,14 @@ function RegisterContent() {
             )}
 
             <p className="font-sans" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(250,250,248,0.35)' }}>
-              Didn&apos;t receive it?{' '}
+              {t('loginResendPrefix')}{' '}
               {resendTimer > 0
-                ? <span style={{ color: 'rgba(250,250,248,0.3)' }}>Resend in 0:{String(resendTimer).padStart(2, '0')}</span>
+                ? <span style={{ color: 'rgba(250,250,248,0.3)' }}>{t('loginResendIn')} 0:{String(resendTimer).padStart(2,'0')}</span>
                 : <button
-                    onClick={handleResendEmailOtp}
+                    onClick={handleResendOtp}
                     disabled={loading}
                     style={{ background: 'none', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', color: '#C9A96E', fontFamily: "'Poppins',sans-serif", fontSize: '0.78rem', padding: 0 }}>
-                    Resend code
+                    {t('loginResendLink')}
                   </button>
               }
             </p>

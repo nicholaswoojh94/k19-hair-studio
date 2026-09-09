@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { sendOtp } from '@/lib/whatsapp/sendOtp'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: NextRequest) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) } }
+  )
+  try {
+    const { name, phone, countryCode, email, birthday } = await req.json()
+
+    if (!name?.trim() || !phone?.trim() || !email?.trim() || !birthday) {
+      return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
+    }
+
+    const fullPhone = `${countryCode || '+60'}${phone.trim()}`
+    const normalEmail = email.trim().toLowerCase()
+
+    // Duplicate checks before sending OTP
+    const [byPhone, byEmail] = await Promise.all([
+      supabaseAdmin.from('users').select('id').eq('phone', fullPhone).single(),
+      supabaseAdmin.from('users').select('id').eq('email', normalEmail).single(),
+    ])
+
+    if (byPhone.data) {
+      return NextResponse.json({ error: 'An account with this phone number already exists.' }, { status: 409 })
+    }
+    if (byEmail.data) {
+      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
+    }
+
+    // Check test mode from admin_settings
+    const { data: testModeSetting } = await supabaseAdmin
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'whatsapp_otp_test_mode')
+      .single()
+
+    const isTestMode = testModeSetting?.value === 'true'
+
+    if (isTestMode) {
+      const otp = '123456'
+      await supabaseAdmin.from('otp_codes').delete().eq('phone', fullPhone).eq('used', false)
+      const { error } = await supabaseAdmin.from('otp_codes').insert({
+        phone: fullPhone,
+        code: otp,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      })
+      if (error) {
+        console.error('OTP insert error:', error)
+        return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, testMode: true, otp })
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    await supabaseAdmin.from('otp_codes').delete().eq('phone', fullPhone).eq('used', false)
+
+    const { error } = await supabaseAdmin.from('otp_codes').insert({
+      phone: fullPhone,
+      code: otp,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    })
+    if (error) {
+      console.error('OTP insert error:', error)
+      return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
+    }
+
+    const result = await sendOtp(fullPhone, otp)
+    if (!result.success) {
+      console.error(`[register/send-otp] Dualhook send failed for ${fullPhone}:`, result.error)
+      return NextResponse.json(
+        { error: result.error || 'Failed to send OTP via WhatsApp. Please try again.' },
+        { status: 502 }
+      )
+    }
+
+    return NextResponse.json({ success: true, testMode: false })
+  } catch (err) {
+    console.error('register/send-otp error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

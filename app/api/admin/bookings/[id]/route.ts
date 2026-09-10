@@ -14,12 +14,19 @@ export async function PATCH(
   )
 
   try {
-    const { status, notes } = await req.json()
+    const { status, notes, amountCharged } = await req.json()
     const { id } = params
+
+    if (status === 'completed' && (amountCharged === undefined || amountCharged === null || isNaN(parseFloat(amountCharged)) || parseFloat(amountCharged) <= 0)) {
+      return NextResponse.json({ error: 'Amount charged is required to complete a booking.' }, { status: 400 })
+    }
 
     const updateData: Record<string, unknown> = { status }
     if (notes !== undefined) updateData.notes = notes
-    if (status === 'completed') updateData.completed_at = new Date().toISOString()
+    if (status === 'completed') {
+      updateData.completed_at = new Date().toISOString()
+      updateData.amount_charged = parseFloat(amountCharged)
+    }
     if (status === 'cancelled') {
       updateData.cancelled_at = new Date().toISOString()
       updateData.cancelled_by = 'admin'
@@ -29,7 +36,7 @@ export async function PATCH(
       .from('bookings')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('*, services(name_en)')
       .single()
 
     if (error) {
@@ -43,17 +50,12 @@ export async function PATCH(
         .eq('key', 'loyalty_points_per_rm')
         .single()
 
-      const { data: service } = await supabaseAdmin
-        .from('services')
-        .select('price_from')
-        .eq('id', booking.service_id)
-        .single()
-
-      if (service?.price_from && settings?.value) {
+      if (settings?.value) {
         const points = Math.floor(
-          parseFloat(service.price_from) * parseFloat(settings.value)
+          parseFloat(booking.amount_charged) * parseFloat(settings.value)
         )
         if (points > 0) {
+          const serviceName = booking.services?.name_en || 'visit'
           await supabaseAdmin
             .from('loyalty_points')
             .insert({
@@ -61,7 +63,7 @@ export async function PATCH(
               booking_id: booking.id,
               points,
               type: 'earned_visit',
-              description: `Visit on ${booking.booking_date}`,
+              description: `${serviceName} on ${booking.booking_date}`,
             })
         }
       }

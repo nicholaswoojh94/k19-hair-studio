@@ -54,7 +54,7 @@ export async function POST(
 
     if (hoursUntil < 24) {
       return NextResponse.json({
-        error: `Cancellations must be made at least 24 hours before your appointment. Your appointment is in ${Math.round(hoursUntil)} hours.`
+        error: 'Cancellation within 24 hours isn\'t available online. Please call or WhatsApp Kyan at +60 11-2778 5730 to cancel.'
       }, { status: 400 })
     }
 

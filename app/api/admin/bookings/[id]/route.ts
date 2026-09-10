@@ -51,7 +51,7 @@ export async function PATCH(
         .single()
 
       if (settings?.value) {
-        const points = Math.floor(
+        const points = Math.round(
           parseFloat(booking.amount_charged) * parseFloat(settings.value)
         )
         if (points > 0) {

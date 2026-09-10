@@ -1026,6 +1026,13 @@ export default function AdminDashboard() {
                   <>
                     <input
                       type="text"
+                      id="cust-lookup-x7"
+                      name="cust-lookup-x7"
+                      autoComplete="off"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded={customerResults.length > 0}
+                      aria-controls="cust-lookup-results"
                       placeholder="Search by name or phone..."
                       value={customerSearch}
                       onChange={e => handleSearchCustomer(e.target.value)}
@@ -1033,15 +1040,17 @@ export default function AdminDashboard() {
                         width: '100%', padding: '10px 14px',
                         border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6,
                         fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif",
-                        outline: 'none', boxSizing: 'border-box', background: '#FAFAFA',
+                        outline: 'none', boxSizing: 'border-box', background: '#FAFAFA', color: '#1C1C1C',
                       }}
                       onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
                       onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')}
                     />
                     {customerResults.length > 0 && (
-                      <div style={{ border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, marginTop: 4, overflow: 'hidden' }}>
+                      <div id="cust-lookup-results" role="listbox" style={{ border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, marginTop: 4, overflow: 'hidden' }}>
                         {customerResults.map(c => (
                           <div key={c.id}
+                            role="option"
+                            aria-selected={false}
                             onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]) }}
                             style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.04)', background: '#FFFFFF' }}
                             onMouseOver={e => (e.currentTarget.style.background = '#F8F8F6')}

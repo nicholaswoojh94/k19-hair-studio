@@ -346,6 +346,9 @@ export default function AdminCustomers() {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               type="text"
+              id="dir-lookup-q4"
+              name="dir-lookup-q4"
+              autoComplete="off"
               placeholder="Search name, phone, email..."
               value={search}
               onChange={e => setSearch(e.target.value)}

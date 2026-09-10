@@ -3,6 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
+function formatNotificationTime(time: string) {
+  const [h, m] = time.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
+function formatNotificationDate(date: string) {
+  return new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -19,7 +30,7 @@ export async function POST(
     // Fetch booking
     const { data: booking } = await supabaseAdmin
       .from('bookings')
-      .select('*')
+      .select('*, users(name), services(name_en)')
       .eq('id', id)
       .eq('user_id', userId)
       .single()
@@ -59,6 +70,17 @@ export async function POST(
       .eq('id', id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const customerName = booking.users?.name || 'A customer'
+    const serviceName = booking.services?.name_en || 'their appointment'
+    const message = `${customerName} cancelled their ${formatNotificationTime(booking.booking_time)} ${serviceName} appointment on ${formatNotificationDate(booking.booking_date)}`
+
+    await supabaseAdmin.from('admin_notifications').insert({
+      type: 'booking_cancelled',
+      booking_id: booking.id,
+      message,
+    })
+
     return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

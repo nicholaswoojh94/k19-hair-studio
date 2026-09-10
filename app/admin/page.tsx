@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { Toast } from '@/components/ui/toast'
 import { MenuButton } from '@/app/admin/menu-button'
+import { NotificationBell } from '@/app/admin/notification-bell'
 
 type Booking = {
   id: string
@@ -363,6 +364,8 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="cal-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
+          <NotificationBell />
+          <span style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.1)', margin: '0 12px' }} />
           <button type="button"
             onClick={() => { setShowBlockModal(true); setBlockModalTab('block') }}
             style={{

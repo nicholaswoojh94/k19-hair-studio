@@ -870,7 +870,7 @@ export default function AdminDashboard() {
                       <div>
                         <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>New Time</label>
                         <select value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)}
-                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', color: '#1C1C1C', appearance: 'none', cursor: 'pointer' }}>
                           <option value="">Select time...</option>
                           {TIME_SLOTS.map(slot => (
                             <option key={slot} value={slot}>{formatTime(slot + ':00')}</option>
@@ -880,7 +880,7 @@ export default function AdminDashboard() {
                       <div>
                         <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>Service</label>
                         <select value={rescheduleServiceId} onChange={e => setRescheduleServiceId(e.target.value)}
-                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', appearance: 'none', cursor: 'pointer' }}>
+                          style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', background: '#FAFAFA', color: '#1C1C1C', appearance: 'none', cursor: 'pointer' }}>
                           {services.map(s => (
                             <option key={s.id} value={s.id}>{s.name_en}</option>
                           ))}

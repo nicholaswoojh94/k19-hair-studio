@@ -122,6 +122,10 @@ export default function AdminDashboard() {
   const [rescheduleServiceId, setRescheduleServiceId] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
   const [rescheduleError, setRescheduleError] = useState('')
+  const [completeMode, setCompleteMode] = useState(false)
+  const [completeAmount, setCompleteAmount] = useState('')
+  const [completing, setCompleting] = useState(false)
+  const [completeError, setCompleteError] = useState('')
 
   const [showToast, setShowToast] = useState(false)
   const [toastMsg, setToastMsg] = useState('')
@@ -189,6 +193,9 @@ export default function AdminDashboard() {
     setTimeout(() => setSelectedBooking(null), 300)
     setRescheduleMode(false)
     setRescheduleError('')
+    setCompleteMode(false)
+    setCompleteAmount('')
+    setCompleteError('')
   }
 
   function filterBookingsForView() {
@@ -244,6 +251,32 @@ export default function AdminDashboard() {
       }
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  async function handleCompleteBooking(id: string) {
+    const amount = parseFloat(completeAmount)
+    if (!completeAmount || isNaN(amount) || amount <= 0) {
+      setCompleteError('Please enter the amount charged.')
+      return
+    }
+    setCompleting(true)
+    setCompleteError('')
+    try {
+      const res = await fetch(`/api/admin/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed', amountCharged: amount })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCompleteError(data.error || 'Failed to complete booking.')
+      } else {
+        await fetchAllBookings()
+        closePanel()
+      }
+    } finally {
+      setCompleting(false)
     }
   }
 
@@ -949,19 +982,54 @@ export default function AdminDashboard() {
                     </button>
                   )
                 )}
-                <button type="button"
-                  onClick={() => updateStatus(selectedBooking.id, 'completed')}
-                  disabled={!!updatingId}
-                  style={{
-                    padding: '12px', background: '#4CAF50', border: 'none',
-                    borderRadius: 6, color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600,
-                    cursor: updatingId ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif",
-                    opacity: updatingId ? 0.6 : 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}>
-                  {updatingId === selectedBooking.id ? <Spinner size={14} color="#fff" /> : null}
-                  ✓ Mark as Complete
-                </button>
+                {completeMode ? (
+                  <div style={{ marginBottom: 4 }}>
+                    <p style={{ fontSize: '0.68rem', fontWeight: 600, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
+                      Complete Appointment
+                    </p>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.45)', display: 'block', marginBottom: 4 }}>Amount Charged (RM)</label>
+                      <input type="number" min="0" step="0.01" value={completeAmount}
+                        onChange={e => setCompleteAmount(e.target.value)}
+                        placeholder="0.00"
+                        style={{ width: '100%', padding: '9px 12px', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: '0.85rem', fontFamily: "'Poppins',sans-serif", outline: 'none', boxSizing: 'border-box', color: '#1C1C1C', background: '#FAFAFA' }}
+                        onFocus={e => (e.currentTarget.style.borderColor = '#C9A96E')}
+                        onBlur={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)')} />
+                    </div>
+                    {completeError && (
+                      <p style={{ color: '#E53935', fontSize: '0.78rem', margin: '0 0 12px' }}>{completeError}</p>
+                    )}
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button type="button"
+                        onClick={() => handleCompleteBooking(selectedBooking.id)}
+                        disabled={completing}
+                        style={{ flex: 1, padding: '9px', background: '#4CAF50', border: 'none', borderRadius: 6, color: '#FFFFFF', fontSize: '0.78rem', fontWeight: 600, cursor: completing ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        {completing ? <><Spinner size={12} color="#fff" /> Saving...</> : '✓ Confirm Complete'}
+                      </button>
+                      <button type="button" onClick={() => { setCompleteMode(false); setCompleteError(''); setCompleteAmount('') }}
+                        style={{ padding: '9px 16px', background: 'transparent', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 6, color: 'rgba(0,0,0,0.5)', fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'Poppins',sans-serif" }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button"
+                    onClick={() => {
+                      setCompleteMode(true)
+                      setCompleteAmount(selectedBooking.services?.price_from ? String(selectedBooking.services.price_from) : '')
+                      setCompleteError('')
+                    }}
+                    disabled={!!updatingId}
+                    style={{
+                      padding: '12px', background: '#4CAF50', border: 'none',
+                      borderRadius: 6, color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600,
+                      cursor: updatingId ? 'not-allowed' : 'pointer', fontFamily: "'Poppins',sans-serif",
+                      opacity: updatingId ? 0.6 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}>
+                    ✓ Mark as Complete
+                  </button>
+                )}
                 <button type="button"
                   onClick={() => updateStatus(selectedBooking.id, 'no_show')}
                   disabled={!!updatingId}

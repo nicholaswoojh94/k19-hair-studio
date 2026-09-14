@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { formatNotificationTime, formatNotificationDate } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     // Get buffer minutes, service duration, and per-customer override in parallel
     const [bufferSetting, service, overrideRes] = await Promise.all([
       supabaseAdmin.from('admin_settings').select('value').eq('key', 'buffer_minutes').single(),
-      supabaseAdmin.from('services').select('duration_minutes, buffer_minutes').eq('id', serviceId).single(),
+      supabaseAdmin.from('services').select('duration_minutes, buffer_minutes, name_en').eq('id', serviceId).single(),
       supabaseAdmin.from('customer_service_durations').select('duration_minutes').eq('customer_id', userId).eq('service_id', serviceId).single(),
     ])
 
@@ -116,6 +117,17 @@ export async function POST(req: NextRequest) {
           scheduled_for: new Date().toISOString(),
         })
     }
+
+    // Notify admin of the new self-service booking
+    const customerName = user?.name || 'A customer'
+    const serviceName = service.data.name_en || 'their appointment'
+    const adminMessage = `**${customerName}** booked a new **${formatNotificationTime(bookingTime)} ${serviceName}** appointment on **${formatNotificationDate(bookingDate)}**`
+
+    await supabaseAdmin.from('admin_notifications').insert({
+      type: 'booking_created',
+      booking_id: booking.id,
+      message: adminMessage,
+    })
 
     return NextResponse.json({ success: true, booking })
 

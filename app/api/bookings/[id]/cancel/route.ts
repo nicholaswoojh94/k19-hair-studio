@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { formatNotificationTime, formatNotificationDate } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
-
-function formatNotificationTime(time: string) {
-  const [h, m] = time.split(':').map(Number)
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
-}
-
-function formatNotificationDate(date: string) {
-  return new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })
-}
 
 export async function POST(
   req: NextRequest,
@@ -73,7 +63,7 @@ export async function POST(
 
     const customerName = booking.users?.name || 'A customer'
     const serviceName = booking.services?.name_en || 'their appointment'
-    const message = `${customerName} cancelled their ${formatNotificationTime(booking.booking_time)} ${serviceName} appointment on ${formatNotificationDate(booking.booking_date)}`
+    const message = `**${customerName}** cancelled their **${formatNotificationTime(booking.booking_time)} ${serviceName}** appointment on **${formatNotificationDate(booking.booking_date)}**`
 
     await supabaseAdmin.from('admin_notifications').insert({
       type: 'booking_cancelled',

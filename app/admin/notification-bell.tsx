@@ -11,6 +11,12 @@ type Notification = {
 
 const POLL_INTERVAL_MS = 60000
 
+function renderNotificationMessage(message: string) {
+  return message.split('**').map((segment, i) =>
+    i % 2 === 1 ? <strong key={i}>{segment}</strong> : <span key={i}>{segment}</span>
+  )
+}
+
 function timeAgo(dateString: string) {
   const diffMs = Date.now() - new Date(dateString).getTime()
   const minutes = Math.floor(diffMs / 60000)
@@ -129,7 +135,7 @@ export function NotificationBell() {
             ) : (
               notifications.map(n => (
                 <div key={n.id} style={{ padding: '12px 18px', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                  <p style={{ fontSize: '0.82rem', color: '#1C1C1C', margin: '0 0 4px', lineHeight: 1.5 }}>{n.message}</p>
+                  <p style={{ fontSize: '0.82rem', color: '#1C1C1C', margin: '0 0 4px', lineHeight: 1.5 }}>{renderNotificationMessage(n.message)}</p>
                   <p style={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.4)', margin: 0 }}>{timeAgo(n.created_at)}</p>
                 </div>
               ))

@@ -169,6 +169,7 @@ export async function GET(
     status: 200,
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
+      'Cache-Control': 'no-store',
     },
   })
 }

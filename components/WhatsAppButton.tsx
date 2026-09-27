@@ -1,11 +1,11 @@
 'use client'
-const WHATSAPP_URL = 'https://wa.me/601127785730'
+const WHATSAPP_URL = 'https://api.whatsapp.com/send?phone=601127785730'
 const PREFILLED_MESSAGE = "Hi Kyan! I'd like to enquire about booking an appointment at K19 Hair Studio 💇"
 
 export default function WhatsAppButton() {
   return (
     <a
-      href={`${WHATSAPP_URL}?text=${encodeURIComponent(PREFILLED_MESSAGE)}`}
+      href={`${WHATSAPP_URL}&text=${encodeURIComponent(PREFILLED_MESSAGE)}`}
       target="_blank"
       rel="noopener"
       aria-label="Chat on WhatsApp"

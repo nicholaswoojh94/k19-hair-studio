@@ -1,6 +1,6 @@
 'use client'
 const WHATSAPP_URL = 'https://api.whatsapp.com/send?phone=601127785730'
-const PREFILLED_MESSAGE = "Hi Kyan! I'd like to enquire about booking an appointment at K19 Hair Studio 💇"
+const PREFILLED_MESSAGE = "Hi Kyan! I'd like to enquire about booking an appointment at K19 Hair Studio \u{1F487}"
 
 export default function WhatsAppButton() {
   return (

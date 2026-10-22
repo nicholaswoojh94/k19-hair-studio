@@ -25,70 +25,66 @@ export async function GET(req: NextRequest) {
   return new NextResponse('Forbidden', { status: 403 })
 }
 
-// Classify the event type from Meta's nested payload structure
-function classifyEvent(body: Record<string, unknown>): string {
-  try {
-    const changes = (body?.entry as any[])?.[0]?.changes
-    if (!Array.isArray(changes) || changes.length === 0) return 'unknown'
-    const value = changes[0]?.value
-    if (!value) return 'unknown'
-    if (value.messages)        return 'message'
-    if (value.statuses)        return 'status'
-    if (value.errors)          return 'error'
-    if (value.template_status) return 'template_status'
-    if (value.account_update)  return 'account_update'
-    return 'unknown'
-  } catch {
-    return 'unknown'
-  }
+// Only status events for templates our system sends (k19_booking_confirmation,
+// k19_appointment_reminder, k19_login) are persisted. Coexistence mode also mirrors
+// Kyan's WhatsApp Business app traffic here — inbound chats, echoes, history sync and
+// statuses for his manual replies — which is customer personal data we must not store.
+const KEPT_CATEGORIES = new Set(['utility', 'authentication'])
+
+type StatusRow = {
+  event_type:        'status'
+  wamid:             string
+  status:            string | null
+  template_category: string
+  event_at:          string | null
 }
 
-// Extract the customer phone number from the payload if present
-function extractPhone(body: Record<string, unknown>): string | null {
-  try {
-    const value = (body?.entry as any[])?.[0]?.changes?.[0]?.value
-    if (!value) return null
-    // Inbound message — contact's wa_id
-    if (value.messages && value.contacts?.[0]?.wa_id) {
-      return value.contacts[0].wa_id as string
+// Extract minimal rows for status events with a kept pricing/conversation category
+function extractTemplateStatuses(body: Record<string, unknown>): StatusRow[] {
+  const rows: StatusRow[] = []
+  const entries = Array.isArray(body?.entry) ? (body.entry as any[]) : []
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : []
+    for (const change of changes) {
+      const statuses = change?.value?.statuses
+      if (!Array.isArray(statuses)) continue
+      for (const s of statuses) {
+        const category = s?.pricing?.category ?? s?.conversation?.origin?.type
+        if (typeof s?.id !== 'string' || !KEPT_CATEGORIES.has(category)) continue
+        const ts = Number(s.timestamp)
+        rows.push({
+          event_type:        'status',
+          wamid:             s.id,
+          status:            typeof s.status === 'string' ? s.status : null,
+          template_category: category,
+          event_at:          Number.isFinite(ts) ? new Date(ts * 1000).toISOString() : null,
+        })
+      }
     }
-    // Delivery/read status — recipient_id on the status object
-    if (value.statuses?.[0]?.recipient_id) {
-      return value.statuses[0].recipient_id as string
-    }
-    return null
-  } catch {
-    return null
   }
+  return rows
 }
 
 // Incoming events from Meta via Dualhook's Webhook Override
 export async function POST(req: NextRequest) {
-  const db = makeAdmin()
   try {
     const body = await req.json() as Record<string, unknown>
+    const rows = extractTemplateStatuses(body)
 
-    const eventType   = classifyEvent(body)
-    const phoneNumber = extractPhone(body)
-
-    const { error } = await db.from('whatsapp_webhook_events').insert({
-      event_type:   eventType,
-      phone_number: phoneNumber,
-      payload:      body,
-      processed:    false,
-    })
-
-    if (error) {
-      console.error('[whatsapp/webhook] DB insert failed:', error.message)
-    } else {
-      // Concise log for Vercel function visibility — no payload content
-      console.log(`[whatsapp/webhook] stored event_type=${eventType} phone=${phoneNumber ?? 'n/a'}`)
+    if (rows.length > 0) {
+      const { error } = await makeAdmin().from('whatsapp_webhook_events').insert(rows)
+      if (error) {
+        console.error('[whatsapp/webhook] DB insert failed:', error.message)
+      } else {
+        // Concise log for Vercel function visibility — no payload content
+        console.log(`[whatsapp/webhook] stored ${rows.length} template status event(s)`)
+      }
     }
   } catch (err) {
     // Still return 200 — Meta retries aggressively on non-200
     console.error('[whatsapp/webhook] parse/store error:', err instanceof Error ? err.message : err)
   }
 
-  // Always ack immediately
+  // Always ack immediately, including for dropped events
   return new NextResponse('OK', { status: 200 })
 }

@@ -48,45 +48,11 @@ export default async function PrivacyPage() {
     <>
       <style>{`
         .privacy-body { background: #F5F5F5; min-height: 100vh; padding: 120px 24px 80px; }
-        .privacy-article { max-width: 720px; margin: 0 auto; }
-        .privacy-article h2 {
-          font-family: 'Lora', Georgia, serif;
-          font-size: 1.15rem;
-          font-weight: 600;
-          color: #121212;
-          margin: 2em 0 0.6em;
-          line-height: 1.4;
-        }
-        .privacy-article h3 {
-          font-family: 'Lora', Georgia, serif;
-          font-size: 1rem;
-          font-weight: 600;
-          color: #121212;
-          margin: 1.5em 0 0.5em;
-        }
-        .privacy-article p {
-          font-family: 'Poppins', system-ui, sans-serif;
-          font-size: 0.9rem;
-          line-height: 1.85;
-          color: rgba(18,18,18,0.75);
-          margin: 0 0 1em;
-        }
-        .privacy-article ul, .privacy-article ol {
-          font-family: 'Poppins', system-ui, sans-serif;
-          font-size: 0.9rem;
-          line-height: 1.85;
-          color: rgba(18,18,18,0.75);
-          padding-left: 1.5em;
-          margin: 0 0 1em;
-        }
-        .privacy-article li { margin-bottom: 0.35em; }
-        .privacy-article a { color: #C9A96E; text-decoration: underline; }
-        .privacy-article strong { font-weight: 600; color: #121212; }
+        .privacy-article { max-width: 620px; margin: 0 auto; }
         .privacy-back { font-family: 'Poppins',sans-serif; font-size: 0.75rem; color: rgba(18,18,18,0.4); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 2rem; letter-spacing: 0.04em; transition: color 0.2s ease; }
         .privacy-back:hover { color: #C9A96E; }
         @media (max-width: 640px) {
           .privacy-body { padding: 100px 20px 60px; }
-          .privacy-article h2 { font-size: 1rem; }
         }
       `}</style>
 
@@ -117,7 +83,7 @@ export default async function PrivacyPage() {
           </div>
 
           {safeHtml ? (
-            <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
+            <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: safeHtml }} />
           ) : (
             <div style={{ padding: '3rem 0', textAlign: 'center' }}>
               <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: '0.9rem', color: 'rgba(18,18,18,0.4)' }}>

@@ -174,8 +174,8 @@ function LoginContent() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#1C1C1C', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '200px 20px 40px', overflowX: 'hidden', maxWidth: '100vw' }}>
-      {/* Lang switcher top-right */}
-      <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 200 }} id="langSwitcher">
+      {/* Mobile lang switcher, below the header (the header shows one on desktop) */}
+      <div className="min-[769px]:hidden" style={{ position: 'fixed', top: 88, right: 24, zIndex: 200 }} id="langSwitcher">
         <button onClick={() => setLangOpen(v => !v)} className="nav-link flex items-center gap-1"
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
           <span>{langLabel}</span>

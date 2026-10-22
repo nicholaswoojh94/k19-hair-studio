@@ -33,6 +33,8 @@ export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) 
   const pathname = usePathname()
   const router = useRouter()
 
+  // Only the homepage has a dark hero behind the header; inner pages get a solid bar
+  const isHome = pathname === '/'
   const hideAll = HIDE_ALL_PATHS.includes(pathname)
   const hideBookNow = hideAll || hideBookNowProp || HIDE_BOOK_NOW_ONLY_PATHS.includes(pathname)
 
@@ -185,9 +187,9 @@ export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) 
       style={{
         paddingTop: isScrolled ? '6px' : '16px',
         paddingBottom: isScrolled ? '6px' : '16px',
-        background: isScrolled ? 'rgba(18,18,18,0.95)' : 'transparent',
-        backdropFilter: isScrolled ? 'blur(12px)' : 'none',
-        boxShadow: isScrolled ? '0 1px 0 rgba(201,169,110,0.1)' : 'none',
+        background: !isHome ? '#1C1C1C' : isScrolled ? 'rgba(18,18,18,0.95)' : 'transparent',
+        backdropFilter: isHome && isScrolled ? 'blur(12px)' : 'none',
+        boxShadow: !isHome ? '0 1px 0 rgba(255,255,255,0.1)' : isScrolled ? '0 1px 0 rgba(201,169,110,0.1)' : 'none',
         transition: 'all 0.3s ease',
       }}
     >
@@ -200,7 +202,12 @@ export default function Nav({ hideBookNow: hideBookNowProp = false }: NavProps) 
             width={260}
             height={80}
             className="nav-logo"
-            style={{ width: isScrolled ? '120px' : '160px', height: 'auto', transition: 'width 0.3s ease', maxWidth: '160px' }}
+            style={{
+              width: isScrolled ? '120px' : '160px', height: 'auto', transition: 'width 0.3s ease', maxWidth: '160px',
+              // The PNG is square with the wordmark in a centred band; crop the
+              // transparent padding on inner pages so the solid bar isn't 190px tall
+              ...(!isHome && { aspectRatio: '40 / 11', objectFit: 'cover' as const }),
+            }}
             priority
           />
         </Link>
